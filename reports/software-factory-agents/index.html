@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Software Factory — Agent Workflow Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─── */
+:root {
+  --bg: #020617; --surface: #0f172a; --surface2: #1e293b;
+  --border: rgba(51,65,85,0.7); --border-glow: rgba(245,158,11,0.4);
+  --amber: #f59e0b; --amber-light: #fcd34d; --amber-dim: rgba(245,158,11,0.12);
+  --text: #f1f5f9; --muted: #94a3b8; --dim: #475569;
+  --green: #34d399; --blue: #60a5fa; --purple: #a78bfa; --red: #f87171; --orange: #fb923c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+a{color:inherit;text-decoration:none}
+
+/* ─── BG ─── */
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 70% 50% at 15% 0%,rgba(245,158,11,0.07) 0%,transparent 60%),
+             radial-gradient(ellipse 50% 40% at 85% 100%,rgba(96,165,250,0.05) 0%,transparent 55%),
+             radial-gradient(ellipse 40% 60% at 50% 50%,rgba(167,139,250,0.03) 0%,transparent 70%);
+  pointer-events:none}
+body::after{content:'';position:fixed;inset:0;z-index:0;
+  background-image:radial-gradient(rgba(255,255,255,0.025) 1px,transparent 1px);
+  background-size:32px 32px;pointer-events:none}
+
+/* ─── TOPBAR ─── */
+.kb-topbar{position:fixed;top:0;left:0;right:0;z-index:200;
+  background:rgba(2,6,23,0.9);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);height:48px;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;font-family:'Inter',sans-serif}
+.kb-back{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);transition:color 0.2s}
+.kb-back:hover{color:var(--amber)}
+.kb-crumb{font-size:12px;color:var(--dim)}
+.kb-crumb a{color:var(--dim);transition:color 0.2s}.kb-crumb a:hover{color:var(--amber)}
+
+/* ─── PROGRESS ─── */
+.progress{position:fixed;top:48px;left:0;height:2px;
+  background:linear-gradient(90deg,var(--amber),#f97316);
+  transition:width 0.4s ease;z-index:100}
+
+/* ─── DECK ─── */
+.deck{width:100%;height:100vh;position:relative;padding-top:48px}
+.slide{position:absolute;top:48px;left:0;right:0;bottom:0;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:40px 64px;opacity:0;pointer-events:none;transition:opacity 0.4s ease;
+  overflow:hidden;z-index:1}
+.slide.active{opacity:1;pointer-events:all}
+
+/* ─── NAV ─── */
+.nav{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;
+  background:rgba(15,23,42,0.9);border:1px solid var(--border);
+  border-radius:99px;padding:8px 20px;z-index:100;backdrop-filter:blur(12px)}
+.nav button{background:none;border:none;color:var(--muted);font-size:16px;
+  cursor:pointer;padding:4px 8px;border-radius:6px;transition:color 0.2s,background 0.2s}
+.nav button:hover{color:var(--amber);background:var(--amber-dim)}
+.nav .counter{font-size:12px;color:var(--dim);min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+
+/* ─── TYPOGRAPHY ─── */
+.label{font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--amber);background:var(--amber-dim);border:1px solid rgba(245,158,11,0.2);
+  padding:4px 12px;border-radius:99px;margin-bottom:18px;display:inline-block}
+h1{font-family:'Playfair Display',serif;font-size:clamp(38px,5vw,68px);
+  background:linear-gradient(135deg,#fff 0%,var(--amber-light) 40%,var(--amber) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;text-align:center}
+h2{font-size:clamp(22px,2.8vw,34px);font-weight:700;color:var(--text);margin-bottom:28px;text-align:center}
+h3{font-size:15px;font-weight:600;color:var(--amber);margin-bottom:8px}
+p{color:var(--muted);line-height:1.7;font-size:14px;font-weight:300}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--amber);
+  background:var(--amber-dim);padding:2px 6px;border-radius:4px}
+.subtitle{font-size:17px;color:var(--muted);text-align:center;max-width:580px;
+  margin-top:14px;line-height:1.65;font-weight:300}
+
+/* ─── CARDS ─── */
+.grid{display:grid;gap:14px;width:100%;max-width:1080px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;
+  position:relative;overflow:hidden;transition:border-color 0.25s,box-shadow 0.25s,transform 0.2s}
+.card::after{content:'';position:absolute;inset:0;border-radius:16px;
+  background:radial-gradient(circle at 50% 0%,rgba(245,158,11,0.05),transparent 60%);
+  opacity:0;transition:opacity 0.3s;pointer-events:none}
+.card:hover{border-color:var(--border-glow);transform:translateY(-2px);
+  box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 40px rgba(245,158,11,0.05)}
+.card:hover::after{opacity:1}
+.card .icon{font-size:28px;margin-bottom:10px;display:block}
+
+/* ─── BADGES ─── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;
+  padding:3px 10px;border-radius:99px;border:1px solid}
+.ba{color:var(--amber);border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.08)}
+.bb{color:var(--blue);border-color:rgba(96,165,250,0.35);background:rgba(96,165,250,0.08)}
+.bg{color:var(--green);border-color:rgba(52,211,153,0.35);background:rgba(52,211,153,0.08)}
+.bp{color:var(--purple);border-color:rgba(167,139,250,0.35);background:rgba(167,139,250,0.08)}
+.br{color:var(--red);border-color:rgba(248,113,113,0.35);background:rgba(248,113,113,0.08)}
+.bo{color:var(--orange);border-color:rgba(251,146,60,0.35);background:rgba(251,146,60,0.08)}
+
+/* ─── TWO COL ─── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:36px;width:100%;max-width:1080px;align-items:start}
+
+/* ─── STEP ─── */
+.step{display:flex;gap:14px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.step-num{width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:var(--amber-dim);border:1px solid rgba(245,158,11,0.4);
+  color:var(--amber);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.step h4{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.step p{font-size:13px}
+
+/* ─── CODE BLOCK ─── */
+.codeblock{background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:12px;
+  padding:18px 22px;font-family:'JetBrains Mono',monospace;font-size:12px;
+  line-height:1.8;text-align:left;width:100%;overflow:hidden}
+.c-dim{color:var(--dim)}.c-key{color:var(--blue)}.c-val{color:var(--green)}
+.c-str{color:var(--amber)}.c-comment{color:var(--dim);font-style:italic}
+.c-purple{color:var(--purple)}
+
+/* ─── PIPELINE ─── */
+.pipe-row{display:flex;align-items:center;gap:0;width:100%;max-width:980px;margin:8px 0}
+.pipe-node{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:18px 14px;text-align:center;position:relative;transition:border-color 0.2s}
+.pipe-node:hover{border-color:var(--border-glow)}
+.pipe-node .pn-icon{font-size:26px;margin-bottom:6px}
+.pipe-node .pn-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+.pipe-node .pn-sub{font-size:11px;color:var(--dim)}
+.pipe-arrow{padding:0 8px;color:var(--amber);font-size:20px;flex-shrink:0}
+.pipe-label{font-size:10px;color:var(--dim);margin-top:4px;font-family:'JetBrains Mono',monospace}
+
+/* ─── HERO BADGES ─── */
+.hero-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:24px}
+
+/* ─── SECTION LABEL ─── */
+.sec-label{font-size:11px;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:14px;width:100%;max-width:1080px;text-align:left}
+
+/* ─── AGENT CARD SPECIAL ─── */
+.agent-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:0;overflow:hidden;transition:border-color 0.25s,box-shadow 0.25s}
+.agent-card:hover{border-color:var(--border-glow);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.agent-card .ac-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px}
+.agent-card .ac-icon{font-size:28px}
+.agent-card .ac-title{font-size:15px;font-weight:700;color:var(--text)}
+.agent-card .ac-id{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.agent-card .ac-body{padding:14px 20px}
+.agent-card .ac-body ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+.agent-card .ac-body ul li{font-size:12px;color:var(--muted)}
+.agent-card .ac-body ul li::before{content:'▸ ';color:var(--amber)}
+.agent-card .ac-footer{padding:10px 20px 14px;display:flex;gap:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<nav class="kb-topbar">
+  <a href="../../reports/" class="kb-back">← Reports</a>
+  <span class="kb-crumb">
+    <a href="../../">🏠 Home</a> › <a href="../../reports/">Reports</a> › Software Factory Agents
+  </span>
+</nav>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: TITLE -->
+  <div class="slide active">
+    <div class="label">Research Report · Mar 2026</div>
+    <h1>AI Software Factory</h1>
+    <p class="subtitle">Designing a multi-agent workflow on OpenClaw — where each agent plays a dedicated role in a fully autonomous software delivery pipeline.</p>
+    <div class="hero-badges" style="margin-top:28px">
+      <span class="badge ba">OpenClaw</span>
+      <span class="badge bb">Multi-Agent</span>
+      <span class="badge bg">sessions_send</span>
+      <span class="badge bp">sessions_spawn</span>
+      <span class="badge bo">Software Factory</span>
+    </div>
+    <p style="margin-top:36px;font-size:12px;color:var(--dim)">Use ← → keys or buttons to navigate</p>
+  </div>
+
+  <!-- SLIDE 2: THE CONCEPT -->
+  <div class="slide">
+    <div class="label">The Concept</div>
+    <h2>A team of agents, each with a job</h2>
+    <div class="grid g3" style="max-width:1000px">
+      <div class="card">
+        <span class="icon">🧠</span>
+        <h3>The Problem</h3>
+        <p>A single general-purpose agent doing everything — planning, coding, testing — loses specialisation. A human software team works because each role has deep context, tools, and accountability.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🏭</span>
+        <h3>The Insight</h3>
+        <p>OpenClaw agents are <em>fully isolated brains</em> — each gets its own workspace, SOUL.md persona, tool set, and session store. This maps perfectly to a professional role definition.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔗</span>
+        <h3>The Glue</h3>
+        <p><code>sessions_send</code> passes structured work between agents. <code>sessions_spawn</code> enables parallelism. A shared filesystem acts as the persistent handoff medium between roles.</p>
+      </div>
+    </div>
+    <div class="hero-badges" style="margin-top:20px">
+      <span class="badge ba">Specialisation</span>
+      <span class="badge bb">Isolation</span>
+      <span class="badge bg">Composability</span>
+      <span class="badge bp">Human-in-the-loop</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: THE ROLES -->
+  <div class="slide">
+    <div class="label">The Roles</div>
+    <h2>Four agents, four responsibilities</h2>
+    <div class="grid g4" style="max-width:1080px">
+      <div class="agent-card">
+        <div class="ac-header">
+          <div class="ac-icon">🎯</div>
+          <div><div class="ac-title">Product Manager</div><div class="ac-id">agent: pm</div></div>
+        </div>
+        <div class="ac-body">
+          <ul>
+            <li>Parses raw requirements</li>
+            <li>Writes epics → stories → tasks</li>
+            <li>Produces structured spec files</li>
+            <li>Defines acceptance criteria</li>
+            <li>Prioritises backlog</li>
+          </ul>
+        </div>
+        <div class="ac-footer">
+          <span class="badge bp">No exec</span>
+          <span class="badge bb">read/write</span>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="ac-header">
+          <div class="ac-icon">💻</div>
+          <div><div class="ac-title">Developer</div><div class="ac-id">agent: dev</div></div>
+        </div>
+        <div class="ac-body">
+          <ul>
+            <li>Reads PM spec files</li>
+            <li>Implements code changes</li>
+            <li>Runs build & unit tests</li>
+            <li>Commits and opens PRs</li>
+            <li>Responds to QA feedback</li>
+          </ul>
+        </div>
+        <div class="ac-footer">
+          <span class="badge bg">Full exec</span>
+          <span class="badge ba">git + CI</span>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="ac-header">
+          <div class="ac-icon">🧪</div>
+          <div><div class="ac-title">QA Engineer</div><div class="ac-id">agent: qa</div></div>
+        </div>
+        <div class="ac-body">
+          <ul>
+            <li>Reviews PRs and diffs</li>
+            <li>Writes & runs E2E tests</li>
+            <li>Validates acceptance criteria</li>
+            <li>Files structured bug reports</li>
+            <li>Approves or loops back</li>
+          </ul>
+        </div>
+        <div class="ac-footer">
+          <span class="badge br">No write</span>
+          <span class="badge bb">exec + read</span>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="ac-header">
+          <div class="ac-icon">🧑‍✈️</div>
+          <div><div class="ac-title">Orchestrator</div><div class="ac-id">agent: main (Sir)</div></div>
+        </div>
+        <div class="ac-body">
+          <ul>
+            <li>Triggers the pipeline</li>
+            <li>Reviews summaries</li>
+            <li>Approves PRs or merges</li>
+            <li>Handles escalations</li>
+            <li>Sets priorities</li>
+          </ul>
+        </div>
+        <div class="ac-footer">
+          <span class="badge ba">All tools</span>
+          <span class="badge bg">Human-in-loop</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: PIPELINE FLOW -->
+  <div class="slide">
+    <div class="label">The Pipeline</div>
+    <h2>How work flows through the factory</h2>
+    <div style="width:100%;max-width:1000px">
+      <div class="pipe-row">
+        <div class="pipe-node" style="border-color:rgba(167,139,250,0.4)">
+          <div class="pn-icon">🧑‍✈️</div>
+          <div class="pn-title">Sir</div>
+          <div class="pn-sub">"Build feature X"</div>
+          <div class="pipe-label">Telegram</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node" style="border-color:rgba(167,139,250,0.4)">
+          <div class="pn-icon">🎯</div>
+          <div class="pn-title">PM Agent</div>
+          <div class="pn-sub">Spec + task breakdown</div>
+          <div class="pipe-label">sessions_send</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node" style="border-color:rgba(52,211,153,0.4)">
+          <div class="pn-icon">💻</div>
+          <div class="pn-title">Dev Agent</div>
+          <div class="pn-sub">Code + PR</div>
+          <div class="pipe-label">sessions_send</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node" style="border-color:rgba(248,113,113,0.4)">
+          <div class="pn-icon">🧪</div>
+          <div class="pn-title">QA Agent</div>
+          <div class="pn-sub">Test + verdict</div>
+          <div class="pipe-label">sessions_send</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node" style="border-color:rgba(245,158,11,0.4)">
+          <div class="pn-icon">✅</div>
+          <div class="pn-title">Sir</div>
+          <div class="pn-sub">Approve or loop</div>
+          <div class="pipe-label">Telegram</div>
+        </div>
+      </div>
+
+      <!-- Feedback loop -->
+      <div style="margin:12px 0 20px;padding:14px 20px;background:var(--surface);border:1px solid rgba(248,113,113,0.25);border-radius:12px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:20px">🔁</span>
+        <p style="font-size:13px;color:var(--muted)"><span style="color:var(--red);font-weight:600">QA fails?</span> — QA agent sends a structured bug report back to Dev via <code>sessions_send</code>. Dev fixes and re-opens the PR. Loop continues until QA passes or Sir intervenes.</p>
+      </div>
+
+      <div class="grid g3" style="margin-top:4px">
+        <div class="card" style="padding:16px">
+          <h3>📁 Shared Filesystem</h3>
+          <p style="font-size:12px">All agents read/write to <code>/factory/</code> — spec files, tickets, review reports. Artefacts persist between turns, no context lost.</p>
+        </div>
+        <div class="card" style="padding:16px">
+          <h3>⚡ sessions_spawn</h3>
+          <p style="font-size:12px">Dev can spawn parallel sub-agents for independent modules. Each sub-task runs concurrently and reports back on completion.</p>
+        </div>
+        <div class="card" style="padding:16px">
+          <h3>🛑 Human gates</h3>
+          <p style="font-size:12px">Pipeline naturally pauses before any irreversible action — PR merge, deploy, database migration — and waits for Sir's explicit approval.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: FILESYSTEM CONTRACT -->
+  <div class="slide">
+    <div class="label">Handoff Design</div>
+    <h2>The shared filesystem contract</h2>
+    <div class="two-col">
+      <div>
+        <div class="sec-label">Directory Structure</div>
+        <div class="codeblock">
+<span class="c-comment"># /factory/ — shared handoff medium</span>
+<span class="c-dim">
+/factory/
+├── </span><span class="c-key">tickets/</span><span class="c-dim">
+│   ├── </span><span class="c-str">TICKET-001.md</span><span class="c-dim">   </span><span class="c-comment">← PM writes</span><span class="c-dim">
+│   └── </span><span class="c-str">TICKET-002.md</span><span class="c-dim">
+├── </span><span class="c-key">specs/</span><span class="c-dim">
+│   └── </span><span class="c-str">feature-x.md</span><span class="c-dim">    </span><span class="c-comment">← PM writes, Dev reads</span><span class="c-dim">
+├── </span><span class="c-key">reviews/</span><span class="c-dim">
+│   └── </span><span class="c-str">pr-42-review.md</span><span class="c-dim"> </span><span class="c-comment">← QA writes</span><span class="c-dim">
+├── </span><span class="c-key">reports/</span><span class="c-dim">
+│   └── </span><span class="c-str">sprint-summary.md</span><span class="c-comment">← PM/QA write</span><span class="c-dim">
+└── </span><span class="c-key">status.json</span><span class="c-dim">         </span><span class="c-comment">← pipeline state</span>
+        </div>
+        <div style="margin-top:14px" class="codeblock">
+<span class="c-comment">// status.json — pipeline heartbeat</span>
+<span class="c-dim">{
+  </span><span class="c-key">"currentTicket"</span><span class="c-dim">: </span><span class="c-str">"TICKET-001"</span><span class="c-dim">,
+  </span><span class="c-key">"stage"</span><span class="c-dim">: </span><span class="c-str">"qa"</span><span class="c-dim">,
+  </span><span class="c-key">"prUrl"</span><span class="c-dim">: </span><span class="c-str">"github.com/.../pull/42"</span><span class="c-dim">,
+  </span><span class="c-key">"qaVerdict"</span><span class="c-dim">: </span><span class="c-str">"pending"</span><span class="c-dim">,
+  </span><span class="c-key">"updatedAt"</span><span class="c-dim">: </span><span class="c-str">"2026-03-06T16:00Z"</span>
+<span class="c-dim">}</span>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Why Files Over Messages</div>
+        <div class="step">
+          <div class="step-num">📄</div>
+          <div><h4>Persistence</h4><p>Files survive agent restarts, compaction, and session gaps. A message in a session can be lost after context window rollover.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">🔍</div>
+          <div><h4>Structured data</h4><p>Markdown specs and JSON status files are machine-readable. Any agent can parse them without relying on conversational context.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">🔗</div>
+          <div><h4>Audit trail</h4><p>Every file change is a git commit. The full history of who wrote what, when, is preserved — critical for a production factory.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">⚡</div>
+          <div><h4>Parallel access</h4><p>Multiple agents can read the same spec simultaneously without waiting. Dev and QA can both inspect the same ticket at once.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: CONFIG -->
+  <div class="slide">
+    <div class="label">Configuration</div>
+    <h2>openclaw.json — wiring it all up</h2>
+    <div class="two-col">
+      <div class="codeblock" style="font-size:11.5px;line-height:1.75">
+<span class="c-comment">// ~/.openclaw/openclaw.json</span>
+<span class="c-dim">{
+  </span><span class="c-key">agents</span><span class="c-dim">: {
+    </span><span class="c-key">list</span><span class="c-dim">: [
+      { </span><span class="c-key">id</span><span class="c-dim">: </span><span class="c-str">"main"</span><span class="c-dim">,
+        </span><span class="c-key">workspace</span><span class="c-dim">: </span><span class="c-str">"~/.openclaw/workspace"</span><span class="c-dim"> },
+
+      { </span><span class="c-key">id</span><span class="c-dim">: </span><span class="c-str">"pm"</span><span class="c-dim">,
+        </span><span class="c-key">workspace</span><span class="c-dim">: </span><span class="c-str">"~/.openclaw/workspace-pm"</span><span class="c-dim">,
+        </span><span class="c-key">tools</span><span class="c-dim">: { </span><span class="c-key">deny</span><span class="c-dim">: [</span><span class="c-str">"exec"</span><span class="c-dim">] } },
+
+      { </span><span class="c-key">id</span><span class="c-dim">: </span><span class="c-str">"dev"</span><span class="c-dim">,
+        </span><span class="c-key">workspace</span><span class="c-dim">: </span><span class="c-str">"~/.openclaw/workspace-dev"</span><span class="c-dim">,
+        </span><span class="c-key">tools</span><span class="c-dim">: { </span><span class="c-key">allow</span><span class="c-dim">: [
+          </span><span class="c-str">"exec"</span><span class="c-dim">, </span><span class="c-str">"read"</span><span class="c-dim">, </span><span class="c-str">"write"</span><span class="c-dim">, </span><span class="c-str">"edit"</span><span class="c-dim">,
+          </span><span class="c-str">"web_search"</span><span class="c-dim">, </span><span class="c-str">"sessions_send"</span>
+        <span class="c-dim">] } },
+
+      { </span><span class="c-key">id</span><span class="c-dim">: </span><span class="c-str">"qa"</span><span class="c-dim">,
+        </span><span class="c-key">workspace</span><span class="c-dim">: </span><span class="c-str">"~/.openclaw/workspace-qa"</span><span class="c-dim">,
+        </span><span class="c-key">tools</span><span class="c-dim">: {
+          </span><span class="c-key">allow</span><span class="c-dim">: [</span><span class="c-str">"exec"</span><span class="c-dim">, </span><span class="c-str">"read"</span><span class="c-dim">, </span><span class="c-str">"sessions_send"</span><span class="c-dim">],
+          </span><span class="c-key">deny</span><span class="c-dim">:  [</span><span class="c-str">"write"</span><span class="c-dim">, </span><span class="c-str">"edit"</span><span class="c-dim">] } }
+    ]
+  },
+
+  </span><span class="c-key">tools</span><span class="c-dim">: {
+    </span><span class="c-key">agentToAgent</span><span class="c-dim">: {
+      </span><span class="c-key">enabled</span><span class="c-dim">: </span><span class="c-purple">true</span><span class="c-dim">,
+      </span><span class="c-key">allow</span><span class="c-dim">: [</span><span class="c-str">"main"</span><span class="c-dim">, </span><span class="c-str">"pm"</span><span class="c-dim">, </span><span class="c-str">"dev"</span><span class="c-dim">, </span><span class="c-str">"qa"</span><span class="c-dim">]
+    }
+  }
+}</span>
+      </div>
+      <div>
+        <div class="sec-label">Key Design Points</div>
+        <div class="step">
+          <div class="step-num">🔒</div>
+          <div><h4>Least-privilege tools</h4><p>PM can't run shell commands. QA can't modify source files. Dev has full exec. Each agent's blast radius is limited to what its role actually requires.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">🧠</div>
+          <div><h4>SOUL.md per agent</h4><p>Each workspace has a tailored persona file. PM thinks in acceptance criteria; Dev thinks in clean commits; QA thinks in edge cases and coverage.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">🔗</div>
+          <div><h4>agentToAgent enabled</h4><p>The explicit allowlist is required for <code>sessions_send</code> to cross agent boundaries. Without it, agents can only send messages within their own scope.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">📂</div>
+          <div><h4>Shared /factory dir</h4><p>All workspaces mount the same <code>/factory/</code> path. No need to pass full context in messages — agents read the file directly.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: SOUL.MD PERSONAS -->
+  <div class="slide">
+    <div class="label">Agent Personas</div>
+    <h2>SOUL.md — each agent's identity</h2>
+    <div class="grid g3" style="max-width:1060px">
+      <div class="card">
+        <span class="icon">🎯</span>
+        <h3>PM Agent SOUL.md</h3>
+        <p style="font-size:12px;margin-bottom:12px">Thinks like a seasoned product manager. Never codes. Never tests. Breaks ambiguity into clarity.</p>
+        <div class="codeblock" style="font-size:11px;padding:12px">
+<span class="c-str">"You are a senior product manager.</span>
+<span class="c-str">Your only output is structured</span>
+<span class="c-str">specs — epics, user stories,</span>
+<span class="c-str">acceptance criteria, and task</span>
+<span class="c-str">breakdowns. You never write code.</span>
+<span class="c-str">When done, write the spec to</span>
+<span class="c-str">/factory/specs/ and notify dev</span>
+<span class="c-str">via sessions_send."</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">💻</span>
+        <h3>Dev Agent SOUL.md</h3>
+        <p style="font-size:12px;margin-bottom:12px">Senior engineer. TDD. Clean commits. Opens PRs. Responds to QA feedback without ego.</p>
+        <div class="codeblock" style="font-size:11px;padding:12px">
+<span class="c-str">"You are a senior software</span>
+<span class="c-str">engineer. Read the spec from</span>
+<span class="c-str">/factory/specs/. Implement TDD.</span>
+<span class="c-str">Run all checks before committing.</span>
+<span class="c-str">Open a PR. When done, notify qa</span>
+<span class="c-str">via sessions_send with the PR URL.</span>
+<span class="c-str">Never merge your own PRs."</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">🧪</span>
+        <h3>QA Agent SOUL.md</h3>
+        <p style="font-size:12px;margin-bottom:12px">Sceptical. Thorough. Writes structured verdicts. Never lets a flaky pass through.</p>
+        <div class="codeblock" style="font-size:11px;padding:12px">
+<span class="c-str">"You are a senior QA engineer.</span>
+<span class="c-str">Review the PR. Run E2E and unit</span>
+<span class="c-str">tests. Validate every acceptance</span>
+<span class="c-str">criterion in the spec. Write your</span>
+<span class="c-str">verdict to /factory/reviews/.</span>
+<span class="c-str">On pass: notify main. On fail:</span>
+<span class="c-str">notify dev with a bug report."</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:18px;padding:14px 24px;background:var(--surface);border:1px solid rgba(245,158,11,0.2);border-radius:12px;max-width:780px;text-align:center">
+      <p style="font-size:13px;color:var(--muted)">The SOUL.md is the agent's <span style="color:var(--amber);font-weight:600">standing operating procedure</span>. It doesn't need to be told what to do each time — it already knows its role, its outputs, and who to notify when it's done.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: LIMITATIONS & NEXT STEPS -->
+  <div class="slide">
+    <div class="label">Limitations & Roadmap</div>
+    <h2>What works today — what comes next</h2>
+    <div class="two-col">
+      <div>
+        <div class="sec-label">Current Limitations</div>
+        <div class="step">
+          <div class="step-num" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.4);color:var(--red)">⚠</div>
+          <div><h4>No native pipeline primitive</h4><p>The PM → Dev → QA chain is orchestrated via <code>sessions_send</code> calls and SOUL.md standing instructions — not a built-in OpenClaw construct. Requires careful persona design to prevent loops.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.4);color:var(--red)">⚠</div>
+          <div><h4>No sub-agent spawning by sub-agents</h4><p>OpenClaw currently prevents sub-agents from spawning their own sub-agents — Dev can't farm out parallel modules unless orchestrated from main.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.4);color:var(--red)">⚠</div>
+          <div><h4>Context window budget</h4><p>Each agent has a finite context window. Long-running tickets require careful file-based handoffs to avoid losing early decisions to compaction.</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Recommended Next Steps</div>
+        <div class="step">
+          <div class="step-num">1</div>
+          <div><h4>Bootstrap the three workspaces</h4><p>Create <code>workspace-pm</code>, <code>workspace-dev</code>, <code>workspace-qa</code> with tailored SOUL.md files and the shared <code>/factory/</code> directory structure.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div><h4>Wire openclaw.json</h4><p>Add agents, tool policies, and <code>agentToAgent</code> allowlist. Restart gateway and verify with <code>openclaw agents list --bindings</code>.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div><h4>Pilot on a real ticket</h4><p>Run a small, well-scoped feature through the full PM → Dev → QA pipeline. Observe where the handoffs break down and iterate on the SOUL.md instructions.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div><h4>Add a /factory command</h4><p>A single trigger — <em>"build feature X"</em> — that kicks off the entire pipeline from main and delivers a summary to Telegram when QA passes.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: SUMMARY -->
+  <div class="slide">
+    <div class="label">Summary</div>
+    <h1>The Factory Blueprint</h1>
+    <div class="grid g3" style="max-width:1000px;margin-top:28px">
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">🏗️</span>
+        <h3 style="text-align:center;margin-bottom:8px">Architecture</h3>
+        <p style="font-size:13px">4 isolated agents, each with a tailored persona, tool policy, and workspace. Shared filesystem as the contract between roles.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">🔗</span>
+        <h3 style="text-align:center;margin-bottom:8px">Communication</h3>
+        <p style="font-size:13px"><code>sessions_send</code> pipes work between agents. <code>sessions_spawn</code> enables parallel sub-tasks. Status JSON keeps pipeline state visible.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">🧑‍✈️</span>
+        <h3 style="text-align:center;margin-bottom:8px">Control</h3>
+        <p style="font-size:13px">Sir stays in the loop at key gates — PR approval, deploy, escalation. The factory is autonomous but never unsupervised.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:24px">
+      <span class="badge ba">OpenClaw multi-agent</span>
+      <span class="badge bb">sessions_send / spawn</span>
+      <span class="badge bg">SOUL.md personas</span>
+      <span class="badge bp">Least-privilege tools</span>
+      <span class="badge bo">Shared /factory/ filesystem</span>
+      <span class="badge br">Human-in-the-loop gates</span>
+    </div>
+    <p style="margin-top:24px;font-size:13px;color:var(--dim)">Ready to build it, Sir — just say the word.</p>
+  </div>
+
+</div>
+
+<!-- NAVIGATION -->
+<nav class="nav">
+  <button id="prev">←</button>
+  <span class="counter" id="counter">1 / 9</span>
+  <button id="next">→</button>
+</nav>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+  function go(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, n));
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+    document.getElementById('progress').style.width = `${((current + 1) / total) * 100}%`;
+  }
+  document.getElementById('prev').addEventListener('click', () => go(current - 1));
+  document.getElementById('next').addEventListener('click', () => go(current + 1));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') go(current + 1);
+    if (e.key === 'ArrowLeft') go(current - 1);
+  });
+  go(0);
+</script>
+</body>
+</html>
