@@ -5,24 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Book Explorer — Architecture Presentation</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../_assets/style.css">
 <style>
-  .kb-topbar {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-    background: rgba(2,6,23,0.92); backdrop-filter: blur(12px);
-    border-bottom: 1px solid #334155;
-    height: 44px; padding: 0 20px;
-    display: flex; align-items: center; justify-content: space-between;
-    font-family: 'Inter', sans-serif;
-  }
-  .kb-topbar .kb-back {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 13px; color: #94a3b8; text-decoration: none;
-    transition: color 0.2s;
-  }
-  .kb-topbar .kb-back:hover { color: #f59e0b; }
-  .kb-topbar .kb-title { font-size: 13px; color: #475569; }
-  body { padding-top: 44px; }
-  .progress { top: 44px !important; }
+  body { padding-top: 48px; overflow: hidden; }
+  .progress { top: 48px !important; }
 </style>
 <style>
   :root {
@@ -168,7 +154,9 @@
 
 <nav class="kb-topbar">
   <a href="../../projects/" class="kb-back">← Projects</a>
-  <span class="kb-title">🏠 <a href="../../" style="color:#475569;text-decoration:none">Home</a> › <a href="../../projects/" style="color:#475569;text-decoration:none">Projects</a> › Book Explorer</span>
+  <span class="kb-crumb">
+    <a href="../../">🏠 Home</a> › <a href="../../projects/">Projects</a> › Book Explorer
+  </span>
 </nav>
 
 <div class="progress" id="progress"></div>
