@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Software Factory — Research Landscape 2024–2025</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─── */
+:root {
+  --bg: #020617; --surface: #0f172a; --surface2: #1e293b;
+  --border: rgba(51,65,85,0.7); --border-glow: rgba(245,158,11,0.4);
+  --amber: #f59e0b; --amber-light: #fcd34d; --amber-dim: rgba(245,158,11,0.12);
+  --text: #f1f5f9; --muted: #94a3b8; --dim: #475569;
+  --green: #34d399; --blue: #60a5fa; --purple: #a78bfa; --red: #f87171; --orange: #fb923c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+a{color:inherit;text-decoration:none}
+
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 70% 50% at 15% 0%,rgba(245,158,11,0.07) 0%,transparent 60%),
+             radial-gradient(ellipse 50% 40% at 85% 100%,rgba(96,165,250,0.05) 0%,transparent 55%),
+             radial-gradient(ellipse 40% 60% at 50% 50%,rgba(167,139,250,0.03) 0%,transparent 70%);
+  pointer-events:none}
+body::after{content:'';position:fixed;inset:0;z-index:0;
+  background-image:radial-gradient(rgba(255,255,255,0.025) 1px,transparent 1px);
+  background-size:32px 32px;pointer-events:none}
+
+.kb-topbar{position:fixed;top:0;left:0;right:0;z-index:200;
+  background:rgba(2,6,23,0.9);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);height:48px;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;font-family:'Inter',sans-serif}
+.kb-back{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);transition:color 0.2s}
+.kb-back:hover{color:var(--amber)}
+.kb-crumb{font-size:12px;color:var(--dim)}
+.kb-crumb a{color:var(--dim);transition:color 0.2s}.kb-crumb a:hover{color:var(--amber)}
+
+.progress{position:fixed;top:48px;left:0;height:2px;
+  background:linear-gradient(90deg,var(--amber),#f97316);
+  transition:width 0.4s ease;z-index:100}
+
+.deck{width:100%;height:100vh;position:relative;padding-top:48px}
+.slide{position:absolute;top:48px;left:0;right:0;bottom:0;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:40px 64px;opacity:0;pointer-events:none;transition:opacity 0.4s ease;
+  overflow:hidden;z-index:1}
+.slide.active{opacity:1;pointer-events:all}
+
+.nav{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;
+  background:rgba(15,23,42,0.9);border:1px solid var(--border);
+  border-radius:99px;padding:8px 20px;z-index:100;backdrop-filter:blur(12px)}
+.nav button{background:none;border:none;color:var(--muted);font-size:16px;
+  cursor:pointer;padding:4px 8px;border-radius:6px;transition:color 0.2s,background 0.2s}
+.nav button:hover{color:var(--amber);background:var(--amber-dim)}
+.nav .counter{font-size:12px;color:var(--dim);min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+
+.label{font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--amber);background:var(--amber-dim);border:1px solid rgba(245,158,11,0.2);
+  padding:4px 12px;border-radius:99px;margin-bottom:18px;display:inline-block}
+h1{font-family:'Playfair Display',serif;font-size:clamp(36px,4.5vw,62px);
+  background:linear-gradient(135deg,#fff 0%,var(--amber-light) 40%,var(--amber) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;text-align:center}
+h2{font-size:clamp(20px,2.6vw,32px);font-weight:700;color:var(--text);margin-bottom:24px;text-align:center}
+h3{font-size:14px;font-weight:600;color:var(--amber);margin-bottom:8px}
+p{color:var(--muted);line-height:1.7;font-size:14px;font-weight:300}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--amber);
+  background:var(--amber-dim);padding:2px 6px;border-radius:4px}
+.subtitle{font-size:16px;color:var(--muted);text-align:center;max-width:600px;
+  margin-top:14px;line-height:1.65;font-weight:300}
+
+.grid{display:grid;gap:14px;width:100%;max-width:1080px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;
+  position:relative;overflow:hidden;transition:border-color 0.25s,box-shadow 0.25s,transform 0.2s}
+.card::after{content:'';position:absolute;inset:0;border-radius:16px;
+  background:radial-gradient(circle at 50% 0%,rgba(245,158,11,0.05),transparent 60%);
+  opacity:0;transition:opacity 0.3s;pointer-events:none}
+.card:hover{border-color:var(--border-glow);transform:translateY(-2px);
+  box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 40px rgba(245,158,11,0.05)}
+.card:hover::after{opacity:1}
+.card .icon{font-size:28px;margin-bottom:10px;display:block}
+
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;
+  padding:3px 10px;border-radius:99px;border:1px solid}
+.ba{color:var(--amber);border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.08)}
+.bb{color:var(--blue);border-color:rgba(96,165,250,0.35);background:rgba(96,165,250,0.08)}
+.bg{color:var(--green);border-color:rgba(52,211,153,0.35);background:rgba(52,211,153,0.08)}
+.bp{color:var(--purple);border-color:rgba(167,139,250,0.35);background:rgba(167,139,250,0.08)}
+.br{color:var(--red);border-color:rgba(248,113,113,0.35);background:rgba(248,113,113,0.08)}
+.bo{color:var(--orange);border-color:rgba(251,146,60,0.35);background:rgba(251,146,60,0.08)}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:36px;width:100%;max-width:1080px;align-items:start}
+
+.step{display:flex;gap:14px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.step-num{width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:var(--amber-dim);border:1px solid rgba(245,158,11,0.4);
+  color:var(--amber);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.step h4{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.step p{font-size:13px}
+
+.hero-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:24px}
+.sec-label{font-size:11px;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:14px;width:100%;max-width:1080px;text-align:left}
+
+/* stat boxes */
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:20px 24px;text-align:center}
+.stat-num{font-size:clamp(28px,3.5vw,46px);font-weight:700;
+  background:linear-gradient(135deg,#fff,var(--amber));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;margin-bottom:6px}
+.stat-desc{font-size:12px;color:var(--muted)}
+
+/* timeline */
+.tl-row{display:flex;gap:0;align-items:stretch;width:100%;max-width:960px}
+.tl-node{flex:1;position:relative;padding:16px 12px 16px 0}
+.tl-dot{width:12px;height:12px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-right:10px;margin-top:4px}
+.tl-inner{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;height:100%}
+.tl-year{font-size:11px;font-weight:700;color:var(--amber);letter-spacing:0.1em;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+.tl-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.tl-desc{font-size:11.5px;color:var(--muted);line-height:1.55}
+.tl-arrow{display:flex;align-items:center;color:var(--amber);font-size:18px;padding:0 4px;align-self:center}
+
+/* info row */
+.info-row{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.info-icon{font-size:18px;flex-shrink:0;margin-top:2px}
+.info-text h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.info-text p{font-size:12px}
+
+/* link card */
+.link-card{display:flex;align-items:center;gap:14px;
+  background:var(--surface);border:1px solid rgba(245,158,11,0.25);border-radius:14px;
+  padding:18px 22px;transition:border-color 0.2s,box-shadow 0.2s;max-width:740px;margin-top:20px}
+.link-card:hover{border-color:rgba(245,158,11,0.5);box-shadow:0 4px 24px rgba(245,158,11,0.08)}
+.link-card .lc-icon{font-size:32px;flex-shrink:0}
+.link-card .lc-body h4{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px}
+.link-card .lc-body p{font-size:12px;color:var(--muted)}
+.link-card .lc-arrow{margin-left:auto;color:var(--amber);font-size:20px}
+</style>
+</head>
+<body>
+
+<nav class="kb-topbar">
+  <a href="../../reports/" class="kb-back">← Reports</a>
+  <span class="kb-crumb">
+    <a href="../../">🏠 Home</a> › <a href="../../reports/">Reports</a> › Software Factory Research 2024–2025
+  </span>
+</nav>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: TITLE -->
+  <div class="slide active">
+    <div class="label">Research Landscape · 2024–2025</div>
+    <h1>Software Factory</h1>
+    <p class="subtitle">A synthesis of current research across software engineering, manufacturing, AI integration, and academia — covering where the concept stands and where it is heading.</p>
+    <div class="hero-badges" style="margin-top:28px">
+      <span class="badge ba">Software Engineering</span>
+      <span class="badge bb">AI & GenAI</span>
+      <span class="badge bg">Digital Twins</span>
+      <span class="badge bp">Industry 5.0</span>
+      <span class="badge bo">Research 2024–2025</span>
+    </div>
+    <p style="margin-top:36px;font-size:12px;color:var(--dim)">Use ← → keys or buttons to navigate</p>
+  </div>
+
+  <!-- SLIDE 2: DEFINITION -->
+  <div class="slide">
+    <div class="label">Foundation</div>
+    <h2>What is a Software Factory?</h2>
+    <div class="two-col">
+      <div>
+        <div class="step">
+          <div class="step-num">🏭</div>
+          <div>
+            <h4>The Core Idea</h4>
+            <p>A software factory applies industrial engineering principles — standardisation, automation, assembly lines — to software production. Not a physical location, but an organisational model for repeatable, efficient delivery.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">🔁</div>
+          <div>
+            <h4>Two Readings</h4>
+            <p><strong style="color:var(--text)">SE lens:</strong> systematic reuse, product lines, DSLs, and CI/CD pipelines — the software industry as a factory.<br><br>
+            <strong style="color:var(--text)">Manufacturing lens:</strong> factories becoming software-driven — where code, not hardware, defines the production floor.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">📅</div>
+          <div>
+            <h4>Origins</h4>
+            <p>Term traced to Hitachi's software factory in Japan, 1960s–70s. Formalised in SE research through the 1990s (Cusumano, Griss). Revived with force in the 2020s by AI and cloud-native tooling.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Core Principles</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+          <div class="card" style="padding:16px">
+            <span class="icon" style="font-size:22px">📦</span>
+            <h3 style="font-size:13px">Standardisation</h3>
+            <p style="font-size:12px">Repeatable processes, consistent component designs, and enforced conventions across every product.</p>
+          </div>
+          <div class="card" style="padding:16px">
+            <span class="icon" style="font-size:22px">⚙️</span>
+            <h3 style="font-size:13px">Automation</h3>
+            <p style="font-size:12px">Code generation, CI/CD, test automation — removing manual steps from the path to production.</p>
+          </div>
+          <div class="card" style="padding:16px">
+            <span class="icon" style="font-size:22px">🧩</span>
+            <h3 style="font-size:13px">Reuse</h3>
+            <p style="font-size:12px">Modular architecture, shared component libraries, product lines built on a common base.</p>
+          </div>
+          <div class="card" style="padding:16px">
+            <span class="icon" style="font-size:22px">📊</span>
+            <h3 style="font-size:13px">Measurement</h3>
+            <p style="font-size:12px">Quantitative feedback loops, throughput metrics, defect rates — managing delivery like an engineered system.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: SE LENS -->
+  <div class="slide">
+    <div class="label">Software Engineering Lens</div>
+    <h2>Building software like an assembly line</h2>
+    <div class="grid g3" style="max-width:1040px">
+      <div class="card">
+        <span class="icon">📐</span>
+        <h3>Software Product Lines</h3>
+        <p>A family of related applications built from a shared architecture and a managed set of reusable components. Variation points define per-product customisation. Reduces duplication, accelerates variant delivery, and concentrates quality effort at the core.</p>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge ba">Feature models</span>
+          <span class="badge bb">Variability</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">🗣️</span>
+        <h3>Domain-Specific Languages</h3>
+        <p>DSLs allow domain experts to author high-level intent that generators compile into lower-level artefacts. Widely used in model-driven engineering (MDE). In 2024, Gen AI makes DSL authoring accessible to non-specialists via natural language — collapsing the gap between intent and implementation.</p>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge bg">MDE</span>
+          <span class="badge bp">Gen AI</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">🔄</span>
+        <h3>CI/CD as the Factory Line</h3>
+        <p>Continuous integration and delivery pipelines are the modern realisation of the software factory concept — automated build, test, security scan, and release stages that every commit traverses. In 2025, AI is embedded directly into pipeline stages for intelligent triage, auto-fix suggestions, and anomaly detection.</p>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge ba">DevOps</span>
+          <span class="badge bo">AI in CI</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:18px;padding:14px 24px;background:var(--surface);border:1px solid rgba(96,165,250,0.2);border-radius:12px;max-width:860px;text-align:center">
+      <p style="font-size:13px;color:var(--muted)"><span style="color:var(--blue);font-weight:600">2025 shift:</span> AI coding assistants (GitHub Copilot, Cursor, Claude Code) are entering the factory line itself — generating code, writing tests, reviewing diffs, and handling repetitive refactors. A 2025 IEEE survey found <span style="color:var(--text);font-weight:600">68% of developers</span> using AI assistants cut development time by at least 35%.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: AI INTEGRATION -->
+  <div class="slide">
+    <div class="label">AI & GenAI Integration</div>
+    <h2>Intelligence enters every stage</h2>
+    <div class="two-col">
+      <div>
+        <div class="sec-label">Where AI is Being Applied</div>
+        <div class="info-row">
+          <div class="info-icon">📝</div>
+          <div class="info-text">
+            <h4>Requirements & Spec</h4>
+            <p>LLMs extract structured requirements from natural language briefs, generate user stories, and identify ambiguity — compressing the PM–Dev handoff.</p>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">💻</div>
+          <div class="info-text">
+            <h4>Code Generation & Review</h4>
+            <p>AI coding assistants generate boilerplate, suggest refactors, complete functions from docstrings, and explain diffs. Junior developers accelerate by focusing on architecture rather than syntax.</p>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">🧪</div>
+          <div class="info-text">
+            <h4>Testing & QA</h4>
+            <p>AI generates unit tests, E2E test scenarios, and fuzz inputs. Mutation testing coverage analysis is automated. Flaky test detection and root-cause suggestion are active research areas.</p>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">🔒</div>
+          <div class="info-text">
+            <h4>Security & Compliance</h4>
+            <p>AI-assisted SAST/DAST tools flag vulnerabilities in pull requests. LLMs explain CVEs in context, suggest fixes, and validate compliance against policy codebases.</p>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">🚀</div>
+          <div class="info-text">
+            <h4>Operations & Observability</h4>
+            <p>AI correlates logs, traces, and metrics to detect anomalies, predict failures, and suggest remediations — feeding back into the factory's quality loop.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Research Signals</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+          <div class="stat-box">
+            <div class="stat-num">68%</div>
+            <div class="stat-desc">of AI-assisted developers cut dev time ≥ 35% <em>(IEEE 2025)</em></div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">92%</div>
+            <div class="stat-desc">of UK undergrads now use AI tools in coursework <em>(2025)</em></div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">20×</div>
+            <div class="stat-desc">faster delivery cited for low-code/no-code platforms over traditional coding</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">2026</div>
+            <div class="stat-desc">Agentic AI predicted to enter factory pipelines as autonomous delivery nodes</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:14px 18px;background:var(--surface);border:1px solid rgba(248,113,113,0.2);border-radius:12px">
+          <p style="font-size:12px;color:var(--muted)"><span style="color:var(--red);font-weight:600">Open risk:</span> Cognitive offloading — heavy AI reliance may erode foundational coding skill in junior developers. Anthropic's 2025 research shows statistically significant skill degradation in AI-heavy learning environments. Pedagogical response is active.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: MANUFACTURING LENS -->
+  <div class="slide">
+    <div class="label">Manufacturing Lens</div>
+    <h2>Software-Defined Factory — Industry 5.0</h2>
+    <div class="grid g3" style="max-width:1040px">
+      <div class="card">
+        <span class="icon">🏗️</span>
+        <h3>Software-Defined Factory (SDF)</h3>
+        <p>A novel paradigm (ResearchGate, 2025) where hardware is decoupled from product/process logic via software abstraction. Production reconfiguration happens at the software layer — no physical retooling. Enabled by: modular digital twins, Gen AI, robotics, hybrid cloud, and high-speed wireless.</p>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge ba">Industry 5.0</span>
+          <span class="badge bb">Hardware abstraction</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">🔗</span>
+        <h3>IT / OT Convergence</h3>
+        <p>Information Technology (enterprise, cloud, analytics) and Operational Technology (PLCs, SCADA, factory floor) are converging through software-defined automation. Seamless data flow enables real-time decisions. Key challenge: the security and reliability demands of OT clash with the pace of IT iteration.</p>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge bg">Real-time data</span>
+          <span class="badge br">Cybersecurity risk</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">🤝</span>
+        <h3>Human-Centric (Industry 5.0)</h3>
+        <p>Industry 5.0 — the EU's post-Industry 4.0 framework — explicitly rejects pure automation in favour of human-machine collaboration (cobots), sustainability, and resilience. AI augments the worker; it doesn't replace them. Research focus: shared decision-making, worker safety digital twins, adaptive interfaces.</p>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge bp">Cobots</span>
+          <span class="badge bo">Sustainability</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <div class="stat-box" style="flex:1;min-width:160px;max-width:200px">
+        <div class="stat-num">$160B+</div>
+        <div class="stat-desc">Global industrial software market 2024 (IoT Analytics)</div>
+      </div>
+      <div class="stat-box" style="flex:1;min-width:160px;max-width:200px">
+        <div class="stat-num">$355B</div>
+        <div class="stat-desc">Projected by end of decade (CAGR 13.5%)</div>
+      </div>
+      <div class="stat-box" style="flex:1;min-width:160px;max-width:200px">
+        <div class="stat-num">$16.2B</div>
+        <div class="stat-desc">Manufacturer data management spend forecast for 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: DIGITAL TWINS -->
+  <div class="slide">
+    <div class="label">Digital Twins & Simulation</div>
+    <h2>The factory's living mirror</h2>
+    <div class="two-col">
+      <div>
+        <div class="sec-label">What Digital Twins Enable</div>
+        <div class="step">
+          <div class="step-num">🔮</div>
+          <div><h4>Predictive Maintenance</h4><p>Real-time sensor data feeds the twin; AI detects deviation patterns and predicts failure before it happens. Auto-triggers spare part orders. Reduces unplanned downtime significantly.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">🧪</div>
+          <div><h4>Process Simulation</h4><p>Proposed changes — new assembly sequence, workflow redesign — are validated in the digital twin before touching the physical factory. Eliminates costly physical trials.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">🧑‍🏭</div>
+          <div><h4>Worker Safety & Training</h4><p>Human-centred twins monitor worker alertness in real-time. VR training environments built from twin data replace physical hazard exposure. Active research 2024–2025.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">🌐</div>
+          <div><h4>Enterprise-Wide Orchestration</h4><p>By 2025, digital twins are evolving from asset-level mirrors to enterprise orchestration layers — connecting supply chain, factory floor, and customer demand into a single coherent model.</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Market Signals</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div class="stat-box">
+            <div class="stat-num">€16.5B</div>
+            <div class="stat-desc">Digital twin market size 2025 (projected)</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">39.8%</div>
+            <div class="stat-desc">CAGR through 2032 for digital twin sector</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">95%</div>
+            <div class="stat-desc">of IoT platforms expected to offer digital twinning by 2029</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">2026</div>
+            <div class="stat-desc">Agentic AI forecast to coordinate twins autonomously (Siemens analysis)</div>
+          </div>
+        </div>
+        <div style="padding:14px 18px;background:var(--surface);border:1px solid rgba(52,211,153,0.2);border-radius:12px">
+          <h3 style="margin-bottom:8px">The AI × Twin Feedback Loop</h3>
+          <p style="font-size:12px">AI enhances twin precision (better anomaly models). Twins provide richer training data for AI (higher-fidelity sensor streams). The two technologies form a compounding advantage — each improving the other continuously.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: TIMELINE -->
+  <div class="slide">
+    <div class="label">Historical Arc</div>
+    <h2>Software factory: six decades of evolution</h2>
+    <div class="tl-row">
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">1960s–70s</div>
+          <div class="tl-title">Industrial Origins</div>
+          <div class="tl-desc">Hitachi Software Works, Japan. First systematic attempt to treat software production as an industrial process. Standardised procedures, reuse libraries, metrics-driven management.</div>
+        </div>
+      </div>
+      <div class="tl-arrow">→</div>
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">1990s</div>
+          <div class="tl-title">SE Formalisation</div>
+          <div class="tl-desc">Academic research crystallises the concept: Cusumano's "Japan's Software Factories", Griss on systematic reuse, CMM/CMMI for process maturity. Software product lines emerge as a discipline.</div>
+        </div>
+      </div>
+      <div class="tl-arrow">→</div>
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">2000s–10s</div>
+          <div class="tl-title">DevOps & Cloud</div>
+          <div class="tl-desc">Agile and DevOps realise factory principles in practice — CI/CD pipelines as assembly lines. Cloud infrastructure makes the factory infinitely scalable. Containerisation (Docker/K8s) standardises the output unit.</div>
+        </div>
+      </div>
+      <div class="tl-arrow">→</div>
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">2020–24</div>
+          <div class="tl-title">AI Enters the Line</div>
+          <div class="tl-desc">GitHub Copilot (2021), ChatGPT (2022), Claude, Gemini. AI coding assistants become mainstream. Platform engineering emerges — internal developer platforms as self-service factories. Low-code/no-code democratises the floor.</div>
+        </div>
+      </div>
+      <div class="tl-arrow">→</div>
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">2025–26</div>
+          <div class="tl-title">Agentic Factory</div>
+          <div class="tl-desc">Autonomous AI agents enter the pipeline: PM agent writes specs, Dev agent implements, QA agent validates. Human-in-the-loop gates for irreversible actions. Research frontier: multi-agent orchestration, safety, and accountability.</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:18px;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:860px;text-align:center">
+      <p style="font-size:12px;color:var(--dim)">The concept reappears in each wave of automation — each time with broader scope, shorter cycle times, and higher autonomy. The question is no longer <em>whether</em> to automate but <em>at which level</em>.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: ACADEMIC LENS -->
+  <div class="slide">
+    <div class="label">Academic Research</div>
+    <h2>Higher education & the software crisis</h2>
+    <div class="two-col">
+      <div>
+        <div class="sec-label">Research Themes 2024–2025</div>
+        <div class="step">
+          <div class="step-num">🎓</div>
+          <div><h4>Software Factory Roadmaps in Academia</h4><p>AIP Conference Proceedings (2025): universities building internal software factories to industrialise student project delivery and foster industry links. Agile methods, shared CI/CD platforms, and peer review cycles are the key ingredients.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">🧠</div>
+          <div><h4>AI Literacy as a Core Skill</h4><p>92% of UK undergraduates use AI tools; 88% use Gen AI for assessed work. Curriculum response in 2025: embed AI literacy — how to critically evaluate, prompt, and audit AI output — as a first-class skill alongside algorithms and data structures.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">⚠️</div>
+          <div><h4>The Cognitive Offloading Problem</h4><p>Anthropic (2025): statistically significant skill erosion in developers who rely heavily on AI coding assistants without deliberate practice. Risk of producing graduates who can prompt but not debug at the abstraction level that matters.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">🔬</div>
+          <div><h4>Addressing the Software Crisis</h4><p>Long-standing challenge: high cost, schedule overruns, quality failures. Factory model resurfaces as the structural answer. Current research focuses on which factory primitives — product lines, platform engineering, AI agents — best reduce entropy at scale.</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Open Research Questions</div>
+        <div class="card" style="margin-bottom:10px;padding:16px">
+          <h3>🤖 Agent accountability</h3>
+          <p style="font-size:12px">When a multi-agent factory introduces a defect, who is responsible? How do audit trails, human gates, and explainability frameworks distribute accountability in an autonomous pipeline?</p>
+        </div>
+        <div class="card" style="margin-bottom:10px;padding:16px">
+          <h3>📏 Measuring factory output quality</h3>
+          <p style="font-size:12px">Traditional metrics (velocity, defect density) are insufficient for AI-assisted factories. What metrics capture the quality of the factory itself — not just the artefacts it produces?</p>
+        </div>
+        <div class="card" style="margin-bottom:10px;padding:16px">
+          <h3>🔄 Factory composition</h3>
+          <p style="font-size:12px">Can factories be composed? Can a QA-as-a-service factory plug into a Dev factory from a different organisation? Standard interfaces for inter-factory handoffs are an open problem.</p>
+        </div>
+        <div class="card" style="padding:16px">
+          <h3>🛡️ Security of the factory</h3>
+          <p style="font-size:12px">AI agents with code-write and exec permissions are a significant attack surface. Prompt injection, supply chain poisoning, and model compromise are live threats. Least-privilege tooling is the first defence — but the research is young.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: RELATED REPORT LINK -->
+  <div class="slide">
+    <div class="label">Related Work</div>
+    <h2>Applying these principles at Stark Industries</h2>
+    <div class="grid g3" style="max-width:1040px">
+      <div class="card">
+        <span class="icon">🏗️</span>
+        <h3>Architecture Pattern</h3>
+        <p>Isolated specialist agents — PM, Developer, QA — each with a tailored persona and least-privilege tool set. Shared filesystem as the contract medium. Human gates before irreversible actions.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔗</span>
+        <h3>OpenClaw Primitives</h3>
+        <p><code>sessions_spawn</code> creates agent workers. <code>sessions_send</code> routes work between them. <code>SOUL.md</code> defines the role contract. <code>/factory/</code> filesystem persists state across agent restarts.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🧑‍✈️</span>
+        <h3>Human-in-the-Loop</h3>
+        <p>The factory is autonomous within each stage, but Sir retains control at key gates — PR approval, production deploy, escalation. Autonomy without accountability is not a factory; it's a runaway process.</p>
+      </div>
+    </div>
+    <a href="../software-factory-agents/" class="link-card">
+      <div class="lc-icon">🏭</div>
+      <div class="lc-body">
+        <h4>AI Software Factory — Agent Workflow Design</h4>
+        <p>The companion report: concrete implementation design for a multi-agent software factory on OpenClaw, including pipeline flow, SOUL.md personas, and openclaw.json configuration.</p>
+      </div>
+      <div class="lc-arrow">→</div>
+    </a>
+  </div>
+
+  <!-- SLIDE 10: SUMMARY -->
+  <div class="slide">
+    <div class="label">Summary</div>
+    <h1>Where the Field Stands</h1>
+    <div class="grid g3" style="max-width:1040px;margin-top:28px">
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">🔬</span>
+        <h3 style="text-align:center;margin-bottom:8px">Two Convergent Streams</h3>
+        <p style="font-size:13px">SE research (reuse, product lines, CI/CD) and manufacturing research (SDF, digital twins, IT/OT) are converging on the same target: software-defined, AI-assisted, human-supervised production at scale.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">🤖</span>
+        <h3 style="text-align:center;margin-bottom:8px">AI as the Inflection Point</h3>
+        <p style="font-size:13px">Gen AI and agentic AI are the 2024–2025 step change. Not incrementally better tools — a qualitative shift in which roles can be automated and at what level of abstraction the human operates.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">🧭</span>
+        <h3 style="text-align:center;margin-bottom:8px">Open Frontier</h3>
+        <p style="font-size:13px">Accountability, inter-factory composition, cognitive offloading, and security of agentic pipelines are active research problems. The factory metaphor is established; the engineering discipline around it is still forming.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:24px">
+      <span class="badge ba">Software Product Lines</span>
+      <span class="badge bb">CI/CD Pipelines</span>
+      <span class="badge bg">Digital Twins</span>
+      <span class="badge bp">Industry 5.0</span>
+      <span class="badge bo">AI Coding Assistants</span>
+      <span class="badge br">Agentic Pipelines</span>
+    </div>
+    <p style="margin-top:24px;font-size:12px;color:var(--dim)">Research compiled March 2026 · Sources: IEEE, ResearchGate, IoT Analytics, Anthropic, EU Industry 5.0 Framework</p>
+  </div>
+
+</div>
+
+<nav class="nav">
+  <button id="prev">←</button>
+  <span class="counter" id="counter">1 / 10</span>
+  <button id="next">→</button>
+</nav>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+  function go(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, n));
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+    document.getElementById('progress').style.width = `${((current + 1) / total) * 100}%`;
+  }
+  document.getElementById('prev').addEventListener('click', () => go(current - 1));
+  document.getElementById('next').addEventListener('click', () => go(current + 1));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') go(current + 1);
+    if (e.key === 'ArrowLeft') go(current - 1);
+  });
+  go(0);
+</script>
+</body>
+</html>
