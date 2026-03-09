@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Software Factory — Concept, Research &amp; Agent Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #020617; --surface: #0f172a; --surface2: #1e293b;
+  --border: rgba(51,65,85,0.7); --border-glow: rgba(245,158,11,0.4);
+  --amber: #f59e0b; --amber-light: #fcd34d; --amber-dim: rgba(245,158,11,0.12);
+  --text: #f1f5f9; --muted: #94a3b8; --dim: #475569;
+  --green: #34d399; --blue: #60a5fa; --purple: #a78bfa; --red: #f87171; --orange: #fb923c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+a{color:inherit;text-decoration:none}
+
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 70% 50% at 15% 0%,rgba(245,158,11,0.07) 0%,transparent 60%),
+             radial-gradient(ellipse 50% 40% at 85% 100%,rgba(96,165,250,0.05) 0%,transparent 55%),
+             radial-gradient(ellipse 40% 60% at 50% 50%,rgba(167,139,250,0.03) 0%,transparent 70%);
+  pointer-events:none}
+body::after{content:'';position:fixed;inset:0;z-index:0;
+  background-image:radial-gradient(rgba(255,255,255,0.025) 1px,transparent 1px);
+  background-size:32px 32px;pointer-events:none}
+
+/* TOPBAR */
+.kb-topbar{position:fixed;top:0;left:0;right:0;z-index:200;
+  background:rgba(2,6,23,0.9);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);height:48px;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between}
+.kb-back{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);transition:color 0.2s}
+.kb-back:hover{color:var(--amber)}
+.kb-crumb{font-size:12px;color:var(--dim)}
+.kb-crumb a{color:var(--dim);transition:color 0.2s}.kb-crumb a:hover{color:var(--amber)}
+
+/* SECTION TABS */
+.kb-tabs{display:flex;gap:2px;align-items:center}
+.kb-tab{font-size:11px;font-weight:500;padding:4px 12px;border-radius:6px;cursor:pointer;
+  color:var(--dim);transition:color 0.2s,background 0.2s;border:none;background:none}
+.kb-tab:hover{color:var(--muted);background:rgba(255,255,255,0.04)}
+.kb-tab.active{color:var(--amber);background:var(--amber-dim)}
+
+/* PROGRESS */
+.progress{position:fixed;top:48px;left:0;height:2px;
+  background:linear-gradient(90deg,var(--amber),#f97316);
+  transition:width 0.4s ease;z-index:100}
+
+/* DECK */
+.deck{width:100%;height:100vh;position:relative;padding-top:48px}
+.slide{position:absolute;top:48px;left:0;right:0;bottom:0;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:36px 60px;opacity:0;pointer-events:none;transition:opacity 0.4s ease;
+  overflow:hidden;z-index:1}
+.slide.active{opacity:1;pointer-events:all}
+
+/* SECTION MARKER */
+.slide-section{position:absolute;top:10px;left:60px;
+  font-size:10px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--dim)}
+
+/* NAV */
+.nav{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;
+  background:rgba(15,23,42,0.9);border:1px solid var(--border);
+  border-radius:99px;padding:8px 20px;z-index:100;backdrop-filter:blur(12px)}
+.nav button{background:none;border:none;color:var(--muted);font-size:16px;
+  cursor:pointer;padding:4px 8px;border-radius:6px;transition:color 0.2s,background 0.2s}
+.nav button:hover{color:var(--amber);background:var(--amber-dim)}
+.nav .counter{font-size:12px;color:var(--dim);min-width:56px;text-align:center;font-variant-numeric:tabular-nums}
+.nav .section-name{font-size:11px;color:var(--dim);padding:0 10px;border-left:1px solid var(--border);border-right:1px solid var(--border)}
+
+/* TYPOGRAPHY */
+.label{font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--amber);background:var(--amber-dim);border:1px solid rgba(245,158,11,0.2);
+  padding:4px 12px;border-radius:99px;margin-bottom:18px;display:inline-block}
+h1{font-family:'Playfair Display',serif;font-size:clamp(34px,4.2vw,60px);
+  background:linear-gradient(135deg,#fff 0%,var(--amber-light) 40%,var(--amber) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;text-align:center}
+h2{font-size:clamp(20px,2.5vw,30px);font-weight:700;color:var(--text);margin-bottom:22px;text-align:center}
+h3{font-size:14px;font-weight:600;color:var(--amber);margin-bottom:7px}
+p{color:var(--muted);line-height:1.7;font-size:14px;font-weight:300}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--amber);
+  background:var(--amber-dim);padding:2px 6px;border-radius:4px}
+.subtitle{font-size:15px;color:var(--muted);text-align:center;max-width:620px;
+  margin-top:14px;line-height:1.65;font-weight:300}
+
+/* GRID / CARDS */
+.grid{display:grid;gap:13px;width:100%;max-width:1080px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;
+  position:relative;overflow:hidden;transition:border-color 0.25s,box-shadow 0.25s,transform 0.2s}
+.card::after{content:'';position:absolute;inset:0;border-radius:14px;
+  background:radial-gradient(circle at 50% 0%,rgba(245,158,11,0.05),transparent 60%);
+  opacity:0;transition:opacity 0.3s;pointer-events:none}
+.card:hover{border-color:var(--border-glow);transform:translateY(-2px);
+  box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 40px rgba(245,158,11,0.05)}
+.card:hover::after{opacity:1}
+.card .icon{font-size:26px;margin-bottom:9px;display:block}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;
+  padding:3px 10px;border-radius:99px;border:1px solid}
+.ba{color:var(--amber);border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.08)}
+.bb{color:var(--blue);border-color:rgba(96,165,250,0.35);background:rgba(96,165,250,0.08)}
+.bg{color:var(--green);border-color:rgba(52,211,153,0.35);background:rgba(52,211,153,0.08)}
+.bp{color:var(--purple);border-color:rgba(167,139,250,0.35);background:rgba(167,139,250,0.08)}
+.br{color:var(--red);border-color:rgba(248,113,113,0.35);background:rgba(248,113,113,0.08)}
+.bo{color:var(--orange);border-color:rgba(251,146,60,0.35);background:rgba(251,146,60,0.08)}
+
+/* TWO-COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:32px;width:100%;max-width:1080px;align-items:start}
+
+/* STEPS */
+.step{display:flex;gap:12px;align-items:flex-start;
+  background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:14px;margin-bottom:9px}
+.step-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  background:var(--amber-dim);border:1px solid rgba(245,158,11,0.4);
+  color:var(--amber);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.step h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.step p{font-size:12.5px}
+
+/* SEC LABEL */
+.sec-label{font-size:11px;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:12px;width:100%;max-width:1080px;text-align:left}
+
+/* HERO BADGES */
+.hero-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+
+/* STAT BOX */
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:13px;
+  padding:18px 20px;text-align:center}
+.stat-num{font-size:clamp(26px,3vw,42px);font-weight:700;
+  background:linear-gradient(135deg,#fff,var(--amber));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;margin-bottom:5px}
+.stat-desc{font-size:11.5px;color:var(--muted)}
+
+/* TIMELINE */
+.tl-row{display:flex;gap:0;align-items:stretch;width:100%;max-width:1000px}
+.tl-node{flex:1;padding:0 8px 0 0}
+.tl-inner{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px;height:100%}
+.tl-year{font-size:10px;font-weight:700;color:var(--amber);letter-spacing:0.1em;margin-bottom:5px;font-family:'JetBrains Mono',monospace}
+.tl-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px}
+.tl-desc{font-size:11px;color:var(--muted);line-height:1.55}
+.tl-arrow{display:flex;align-items:center;color:var(--amber);font-size:17px;padding:0 2px;align-self:center;flex-shrink:0}
+
+/* PIPELINE */
+.pipe-row{display:flex;align-items:center;gap:0;width:100%;max-width:980px;margin:6px 0}
+.pipe-node{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:13px;
+  padding:16px 12px;text-align:center;position:relative;transition:border-color 0.2s}
+.pipe-node:hover{border-color:var(--border-glow)}
+.pipe-node .pn-icon{font-size:24px;margin-bottom:5px}
+.pipe-node .pn-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px}
+.pipe-node .pn-sub{font-size:10px;color:var(--dim)}
+.pipe-arrow{padding:0 6px;color:var(--amber);font-size:18px;flex-shrink:0}
+
+/* AGENT CARD */
+.agent-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;transition:border-color 0.25s,box-shadow 0.25s}
+.agent-card:hover{border-color:var(--border-glow);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.ac-header{padding:14px 18px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px}
+.ac-icon{font-size:26px}
+.ac-title{font-size:14px;font-weight:700;color:var(--text)}
+.ac-id{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.ac-body{padding:12px 18px}
+.ac-body ul{list-style:none;display:flex;flex-direction:column;gap:5px}
+.ac-body ul li{font-size:12px;color:var(--muted)}
+.ac-body ul li::before{content:'▸ ';color:var(--amber)}
+.ac-footer{padding:8px 18px 12px;display:flex;gap:6px;flex-wrap:wrap}
+
+/* SOUL.MD DISPLAY */
+.soul-file{background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:13px;
+  overflow:hidden;width:100%}
+.soul-titlebar{display:flex;align-items:center;gap:8px;padding:10px 16px;
+  background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)}
+.soul-dots{display:flex;gap:5px}
+.soul-dot{width:10px;height:10px;border-radius:50%}
+.soul-filename{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-left:4px}
+.soul-content{padding:16px 20px;font-family:'JetBrains Mono',monospace;font-size:11.5px;
+  line-height:1.75;overflow:hidden}
+.md-h1{color:var(--amber-light);font-weight:700;font-size:13px;display:block;margin-bottom:4px}
+.md-h2{color:var(--blue);font-weight:600;font-size:12px;display:block;margin-top:10px;margin-bottom:3px}
+.md-em{color:var(--muted);font-style:italic}
+.md-bold{color:var(--text);font-weight:600}
+.md-dim{color:var(--dim)}
+.md-bullet{color:var(--muted);display:block;padding-left:12px}
+.md-bullet::before{content:'- ';color:var(--amber)}
+.md-rule{border:none;border-top:1px solid var(--border);margin:8px 0}
+.md-green{color:var(--green)}
+.md-purple{color:var(--purple)}
+.md-red{color:var(--red)}
+.md-orange{color:var(--orange)}
+
+/* CODE BLOCK */
+.codeblock{background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;font-family:'JetBrains Mono',monospace;font-size:11.5px;
+  line-height:1.8;text-align:left;width:100%;overflow:hidden}
+.c-dim{color:var(--dim)}.c-key{color:var(--blue)}.c-val{color:var(--green)}
+.c-str{color:var(--amber)}.c-comment{color:var(--dim);font-style:italic}.c-purple{color:var(--purple)}
+
+/* INFO ROW */
+.info-row{display:flex;gap:10px;margin-bottom:9px;align-items:flex-start}
+.info-icon{font-size:17px;flex-shrink:0;margin-top:2px}
+.info-text h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.info-text p{font-size:12px}
+</style>
+</head>
+<body>
+
+<nav class="kb-topbar">
+  <a href="../" class="kb-back">← Reports</a>
+  <div class="kb-tabs" id="sectionTabs"></div>
+  <span class="kb-crumb">
+    <a href="../../">🏠 Home</a> › <a href="../">Reports</a> › Software Factory
+  </span>
+</nav>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- ═══════════════════════════════════════════
+       PART I — CONCEPT & RESEARCH
+  ═══════════════════════════════════════════ -->
+
+  <!-- SLIDE 1: TITLE -->
+  <div class="slide active" data-section="Overview">
+    <div class="label">Concept · Research · Implementation · March 2026</div>
+    <h1>Software Factory</h1>
+    <p class="subtitle">From a 1960s Japanese engineering experiment to a 2025 AI-agent delivery pipeline — the complete picture: what it is, what research says, and how to build one on OpenClaw.</p>
+    <div class="hero-badges">
+      <span class="badge ba">Research 2024–2025</span>
+      <span class="badge bb">AI &amp; GenAI</span>
+      <span class="badge bg">Digital Twins</span>
+      <span class="badge bp">Industry 5.0</span>
+      <span class="badge bo">OpenClaw Agents</span>
+    </div>
+    <p style="margin-top:32px;font-size:12px;color:var(--dim)">Use ← → keys or buttons to navigate · 16 slides</p>
+  </div>
+
+  <!-- SLIDE 2: DEFINITION -->
+  <div class="slide" data-section="Concept">
+    <div class="label">Foundation</div>
+    <h2>What is a Software Factory?</h2>
+    <div class="two-col">
+      <div>
+        <div class="step">
+          <div class="step-num">🏭</div>
+          <div>
+            <h4>The Core Idea</h4>
+            <p>A software factory applies industrial engineering principles — standardisation, automation, assembly-line thinking — to software production. Not a physical place, but an organisational model for repeatable, high-throughput delivery.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">🔭</div>
+          <div>
+            <h4>Two Readings</h4>
+            <p><span style="color:var(--text);font-weight:600">SE lens:</span> systematic reuse, product lines, CI/CD pipelines — the software discipline itself treated as a factory.<br><br>
+            <span style="color:var(--text);font-weight:600">Manufacturing lens:</span> physical factories becoming software-driven — production reconfigured at the code layer, not the hardware layer.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">📅</div>
+          <div>
+            <h4>Origins</h4>
+            <p>Traced to Hitachi Software Works, Japan, 1960s–70s. Formalised in SE research through the 1990s (Cusumano, Griss). Revived with force in 2020s by AI and cloud-native tooling.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Core Principles</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:9px">
+          <div class="card" style="padding:15px">
+            <span class="icon" style="font-size:20px">📦</span>
+            <h3 style="font-size:12px">Standardisation</h3>
+            <p style="font-size:11.5px">Repeatable processes, consistent component designs, enforced conventions across every product line.</p>
+          </div>
+          <div class="card" style="padding:15px">
+            <span class="icon" style="font-size:20px">⚙️</span>
+            <h3 style="font-size:12px">Automation</h3>
+            <p style="font-size:11.5px">Code generation, CI/CD, test automation — removing manual steps from the path to production.</p>
+          </div>
+          <div class="card" style="padding:15px">
+            <span class="icon" style="font-size:20px">🧩</span>
+            <h3 style="font-size:12px">Reuse</h3>
+            <p style="font-size:11.5px">Modular architecture, shared libraries, and product families built on a common managed base.</p>
+          </div>
+          <div class="card" style="padding:15px">
+            <span class="icon" style="font-size:20px">📊</span>
+            <h3 style="font-size:12px">Measurement</h3>
+            <p style="font-size:11.5px">Quantitative feedback loops — throughput, defect density, cycle time — managed like an engineered system.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: TIMELINE -->
+  <div class="slide" data-section="Concept">
+    <div class="label">Historical Arc</div>
+    <h2>Six decades of evolution</h2>
+    <div class="tl-row">
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">1960s–70s</div>
+          <div class="tl-title">Industrial Origins</div>
+          <div class="tl-desc">Hitachi Software Works, Japan. First systematic attempt to treat software as an industrial product. Standardised procedures, reuse libraries, metrics-driven management.</div>
+        </div>
+      </div>
+      <div class="tl-arrow">→</div>
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">1990s</div>
+          <div class="tl-title">SE Formalisation</div>
+          <div class="tl-desc">Cusumano's "Japan's Software Factories," Griss on systematic reuse, CMM/CMMI for process maturity. Software product lines emerge as a formal discipline.</div>
+        </div>
+      </div>
+      <div class="tl-arrow">→</div>
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">2000s–10s</div>
+          <div class="tl-title">DevOps &amp; Cloud</div>
+          <div class="tl-desc">Agile and DevOps realise factory principles in practice. CI/CD pipelines as assembly lines. Containerisation (Docker/K8s) standardises the delivery unit. Infrastructure-as-code.</div>
+        </div>
+      </div>
+      <div class="tl-arrow">→</div>
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">2020–24</div>
+          <div class="tl-title">AI Enters the Line</div>
+          <div class="tl-desc">GitHub Copilot, ChatGPT, Claude, Gemini. AI coding assistants become mainstream. Platform engineering — internal developer platforms as self-service factories. Low-code democratises the floor.</div>
+        </div>
+      </div>
+      <div class="tl-arrow">→</div>
+      <div class="tl-node">
+        <div class="tl-inner">
+          <div class="tl-year">2025–26</div>
+          <div class="tl-title">Agentic Factory</div>
+          <div class="tl-desc">Autonomous AI agents as specialised roles: PM writes specs, Dev implements, QA validates. Human-in-the-loop gates for irreversible decisions. Research frontier: accountability, safety, composition.</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:11px 20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:880px;text-align:center">
+      <p style="font-size:12px;color:var(--dim)">The concept resurfaces in every automation wave — each time with broader scope, shorter cycle times, and higher autonomy. The question shifts from <em>whether</em> to automate to <em>at which abstraction level</em> the human operates.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       PART II — RESEARCH LANDSCAPE
+  ═══════════════════════════════════════════ -->
+
+  <!-- SLIDE 4: SE LENS -->
+  <div class="slide" data-section="Research">
+    <div class="label">Software Engineering Lens</div>
+    <h2>Building software like an assembly line</h2>
+    <div class="grid g3" style="max-width:1040px">
+      <div class="card">
+        <span class="icon">📐</span>
+        <h3>Software Product Lines</h3>
+        <p style="font-size:13px">A family of related applications built from a shared architecture and a managed set of reusable components. Variation points handle per-product customisation. Concentrates quality effort at the core rather than duplicating it per product.</p>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge ba">Feature models</span>
+          <span class="badge bb">Variability management</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">🗣️</span>
+        <h3>Domain-Specific Languages</h3>
+        <p style="font-size:13px">DSLs let domain experts author high-level intent that generators compile into lower-level artefacts — model-driven engineering (MDE). In 2024–25, Gen AI collapses this further: natural language becomes the DSL, with the LLM as the compiler.</p>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge bg">MDE</span>
+          <span class="badge bp">Gen AI as compiler</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="icon">🔄</span>
+        <h3>CI/CD as the Factory Line</h3>
+        <p style="font-size:13px">CI/CD pipelines are the modern realisation of the software factory — automated build, test, security scan, and release stages every commit traverses. By 2025, AI is embedded directly into pipeline stages for intelligent triage, auto-fix, and anomaly detection.</p>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge ba">DevOps</span>
+          <span class="badge bo">AI-augmented CI</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px 22px;background:var(--surface);border:1px solid rgba(96,165,250,0.2);border-radius:11px;max-width:860px;text-align:center">
+      <p style="font-size:12.5px;color:var(--muted)"><span style="color:var(--blue);font-weight:600">2025 shift:</span> AI coding assistants are entering the factory line itself — generating code, writing tests, reviewing diffs, handling repetitive refactors. A 2025 IEEE survey found <span style="color:var(--text);font-weight:600">68% of developers</span> using AI assistants cut development time by at least 35%.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: AI INTEGRATION -->
+  <div class="slide" data-section="Research">
+    <div class="label">AI &amp; GenAI Integration</div>
+    <h2>Intelligence enters every stage</h2>
+    <div class="two-col">
+      <div>
+        <div class="sec-label">Where AI Is Being Applied</div>
+        <div class="info-row"><div class="info-icon">📝</div><div class="info-text"><h4>Requirements &amp; Spec</h4><p>LLMs extract structured requirements from natural language briefs, generate user stories, and surface ambiguity — compressing the PM–Dev handoff significantly.</p></div></div>
+        <div class="info-row"><div class="info-icon">💻</div><div class="info-text"><h4>Code Generation &amp; Review</h4><p>AI coding assistants (Copilot, Cursor, Claude Code) generate boilerplate, suggest refactors, complete functions from docstrings, explain diffs. Junior developers focus earlier on architecture rather than syntax.</p></div></div>
+        <div class="info-row"><div class="info-icon">🧪</div><div class="info-text"><h4>Testing &amp; QA</h4><p>AI generates unit tests, E2E scenarios, fuzz inputs. Mutation testing coverage analysis is automated. Flaky test detection and root-cause suggestion are active research areas in 2025.</p></div></div>
+        <div class="info-row"><div class="info-icon">🔒</div><div class="info-text"><h4>Security &amp; Compliance</h4><p>AI-assisted SAST/DAST flags vulnerabilities in PRs. LLMs explain CVEs in context, suggest fixes, validate compliance against policy codebases.</p></div></div>
+        <div class="info-row"><div class="info-icon">🚀</div><div class="info-text"><h4>Operations &amp; Observability</h4><p>AI correlates logs, traces, and metrics to detect anomalies and predict failures — feeding back into the factory's quality loop.</p></div></div>
+      </div>
+      <div>
+        <div class="sec-label">Research Signals</div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+          <div class="stat-box"><div class="stat-num">68%</div><div class="stat-desc">of AI-assisted developers cut dev time ≥ 35% <em>(IEEE 2025)</em></div></div>
+          <div class="stat-box"><div class="stat-num">92%</div><div class="stat-desc">of UK undergrads now use AI tools in coursework <em>(2025)</em></div></div>
+          <div class="stat-box"><div class="stat-num">20×</div><div class="stat-desc">faster delivery cited for low-code/no-code vs traditional coding</div></div>
+          <div class="stat-box"><div class="stat-num">2026</div><div class="stat-desc">Agentic AI forecast to enter pipelines as autonomous delivery nodes</div></div>
+        </div>
+        <div style="padding:13px 16px;background:var(--surface);border:1px solid rgba(248,113,113,0.2);border-radius:11px">
+          <p style="font-size:12px;color:var(--muted)"><span style="color:var(--red);font-weight:600">⚠ Open risk — cognitive offloading:</span> Anthropic (2025) found statistically significant skill erosion in developers who rely heavily on AI without deliberate practice. Risk: graduates who can prompt but cannot debug at the abstraction level that matters. Pedagogical response is active.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: MANUFACTURING LENS -->
+  <div class="slide" data-section="Research">
+    <div class="label">Manufacturing Lens</div>
+    <h2>Software-Defined Factory &amp; Industry 5.0</h2>
+    <div class="grid g3" style="max-width:1040px">
+      <div class="card">
+        <span class="icon">🏗️</span>
+        <h3>Software-Defined Factory</h3>
+        <p style="font-size:12.5px">A novel paradigm (ResearchGate 2025): hardware decoupled from product/process logic via software abstraction. Production reconfiguration happens at the code layer — no physical retooling. Enabled by modular digital twins, Gen AI, robotics, hybrid cloud, and high-speed wireless networks.</p>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><span class="badge ba">Industry 5.0</span><span class="badge bb">Hardware abstraction</span></div>
+      </div>
+      <div class="card">
+        <span class="icon">🌐</span>
+        <h3>Digital Twins</h3>
+        <p style="font-size:12.5px">Precise virtual representations of physical assets updated in real-time. In 2025, digital twins evolve from asset-level mirrors into enterprise orchestration layers — connecting supply chain, factory floor, and customer demand. AI × twin is a compounding advantage; each improves the other continuously.</p>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><span class="badge bg">€16.5B market 2025</span><span class="badge bo">39.8% CAGR</span></div>
+      </div>
+      <div class="card">
+        <span class="icon">🤝</span>
+        <h3>Industry 5.0 — Human-Centric</h3>
+        <p style="font-size:12.5px">The EU's post-Industry 4.0 framework rejects pure automation in favour of human-machine collaboration (cobots), sustainability, and resilience. AI augments the worker; it doesn't replace them. Research focus: shared decision-making, worker safety digital twins, adaptive interfaces.</p>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><span class="badge bp">Cobots</span><span class="badge bg">Sustainability</span></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <div class="stat-box" style="flex:1;min-width:150px;max-width:200px"><div class="stat-num">$160B+</div><div class="stat-desc">Global industrial software market 2024</div></div>
+      <div class="stat-box" style="flex:1;min-width:150px;max-width:200px"><div class="stat-num">$355B</div><div class="stat-desc">Projected by end of decade (CAGR 13.5%)</div></div>
+      <div class="stat-box" style="flex:1;min-width:150px;max-width:200px"><div class="stat-num">95%</div><div class="stat-desc">of IoT platforms to offer digital twinning by 2029</div></div>
+      <div class="stat-box" style="flex:1;min-width:150px;max-width:200px"><div class="stat-num">$16.2B</div><div class="stat-desc">Manufacturer data management spend forecast 2026</div></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: ACADEMIC & OPEN QUESTIONS -->
+  <div class="slide" data-section="Research">
+    <div class="label">Academic Research</div>
+    <h2>Open questions &amp; the education frontier</h2>
+    <div class="two-col">
+      <div>
+        <div class="sec-label">Research Themes 2024–2025</div>
+        <div class="step"><div class="step-num">🎓</div><div><h4>Higher Education Roadmaps</h4><p>AIP Conference Proceedings (2025): universities building internal software factories to industrialise student project delivery and foster industry links. Agile methods, shared CI/CD platforms, and peer review cycles are the key ingredients.</p></div></div>
+        <div class="step"><div class="step-num">🔬</div><div><h4>Addressing the Software Crisis</h4><p>Long-standing challenge: high cost, schedule overruns, quality failures. The factory model resurfaces as the structural answer. Current research: which primitives — product lines, platform engineering, AI agents — best reduce entropy at scale.</p></div></div>
+        <div class="step"><div class="step-num">🤖</div><div><h4>IT/OT Convergence Security</h4><p>As factory floors connect to cloud systems, OT security demands collide with IT development pace. AI agents with exec permissions are a significant attack surface. Least-privilege tooling is the first defence — but the research is young.</p></div></div>
+      </div>
+      <div>
+        <div class="sec-label">Open Research Problems</div>
+        <div class="card" style="padding:14px;margin-bottom:9px">
+          <h3>🤖 Agent accountability</h3>
+          <p style="font-size:12px">When a multi-agent factory introduces a defect, who is responsible? How do audit trails, human gates, and explainability frameworks distribute accountability across an autonomous pipeline?</p>
+        </div>
+        <div class="card" style="padding:14px;margin-bottom:9px">
+          <h3>📏 Measuring factory quality</h3>
+          <p style="font-size:12px">Traditional metrics (velocity, defect density) are insufficient for AI-assisted factories. What metrics capture the quality of the factory itself — not just the artefacts it produces?</p>
+        </div>
+        <div class="card" style="padding:14px;margin-bottom:9px">
+          <h3>🔄 Factory composition</h3>
+          <p style="font-size:12px">Can factories be composed across organisations? Standard interfaces for inter-factory handoffs — specs, test reports, deployment contracts — remain an open problem.</p>
+        </div>
+        <div class="card" style="padding:14px">
+          <h3>🧠 Cognitive offloading</h3>
+          <p style="font-size:12px">Anthropic (2025): heavy AI reliance causes measurable skill erosion in junior developers. Pedagogy must balance productivity acceleration with foundational depth.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       PART III — IMPLEMENTATION
+  ═══════════════════════════════════════════ -->
+
+  <!-- SLIDE 8: THE CONCEPT (AGENT FACTORY) -->
+  <div class="slide" data-section="Implementation">
+    <div class="label">The Agent Factory</div>
+    <h2>Why agents map perfectly to the factory model</h2>
+    <div class="grid g3" style="max-width:1020px">
+      <div class="card">
+        <span class="icon">🧠</span>
+        <h3>The Problem</h3>
+        <p>A single general-purpose agent doing everything — planning, coding, testing, deploying — loses specialisation. A human software team works because each role has deep context, dedicated tools, and clear accountability. The same applies to agents.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🏭</span>
+        <h3>The Insight</h3>
+        <p>OpenClaw agents are <em>fully isolated brains</em> — each gets its own workspace, <code>SOUL.md</code> persona, tool policy, and session store. This maps precisely to a professional role definition. Specialisation, isolation, composability.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔗</span>
+        <h3>The Glue</h3>
+        <p><code>sessions_send</code> passes structured work between agents. <code>sessions_spawn</code> enables parallelism. A shared <code>/factory/</code> filesystem acts as the persistent handoff medium — artefacts survive session restarts and context compaction.</p>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <span class="badge ba">Specialisation</span>
+      <span class="badge bb">Isolation</span>
+      <span class="badge bg">Composability</span>
+      <span class="badge bp">Least-privilege tooling</span>
+      <span class="badge bo">Human-in-the-loop</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: THE FOUR ROLES -->
+  <div class="slide" data-section="Implementation">
+    <div class="label">The Roles</div>
+    <h2>Four agents, four responsibilities</h2>
+    <div class="grid g4" style="max-width:1080px">
+      <div class="agent-card">
+        <div class="ac-header"><div class="ac-icon">🎯</div><div><div class="ac-title">Product Manager</div><div class="ac-id">agent: pm</div></div></div>
+        <div class="ac-body"><ul>
+          <li>Parses raw requirements</li>
+          <li>Writes epics → stories → tasks</li>
+          <li>Produces structured spec files</li>
+          <li>Defines acceptance criteria</li>
+          <li>Prioritises the backlog</li>
+        </ul></div>
+        <div class="ac-footer"><span class="badge bp">No exec</span><span class="badge bb">read / write</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="ac-header"><div class="ac-icon">💻</div><div><div class="ac-title">Developer</div><div class="ac-id">agent: dev</div></div></div>
+        <div class="ac-body"><ul>
+          <li>Reads PM spec files</li>
+          <li>Implements via TDD</li>
+          <li>Runs build &amp; unit tests</li>
+          <li>Commits and opens PRs</li>
+          <li>Responds to QA feedback</li>
+        </ul></div>
+        <div class="ac-footer"><span class="badge bg">Full exec</span><span class="badge ba">git + CI</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="ac-header"><div class="ac-icon">🧪</div><div><div class="ac-title">QA Engineer</div><div class="ac-id">agent: qa</div></div></div>
+        <div class="ac-body"><ul>
+          <li>Reviews PRs and diffs</li>
+          <li>Runs E2E &amp; integration tests</li>
+          <li>Validates acceptance criteria</li>
+          <li>Files structured bug reports</li>
+          <li>Approves or loops back to Dev</li>
+        </ul></div>
+        <div class="ac-footer"><span class="badge br">No write</span><span class="badge bb">exec + read</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="ac-header"><div class="ac-icon">🧑‍✈️</div><div><div class="ac-title">Orchestrator</div><div class="ac-id">agent: main (Sir)</div></div></div>
+        <div class="ac-body"><ul>
+          <li>Triggers the pipeline</li>
+          <li>Reviews summaries</li>
+          <li>Approves PRs or merges</li>
+          <li>Handles escalations</li>
+          <li>Sets priorities &amp; scope</li>
+        </ul></div>
+        <div class="ac-footer"><span class="badge ba">All tools</span><span class="badge bg">Human-in-loop</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SOUL.MD SLIDES
+  ═══════════════════════════════════════════ -->
+
+  <!-- SLIDE 10: PM SOUL.MD -->
+  <div class="slide" data-section="SOUL.md">
+    <div class="label">Agent Persona</div>
+    <h2>Product Manager — SOUL.md</h2>
+    <div class="two-col" style="align-items:start">
+      <div class="soul-file">
+        <div class="soul-titlebar">
+          <div class="soul-dots">
+            <div class="soul-dot" style="background:#f87171"></div>
+            <div class="soul-dot" style="background:#fcd34d"></div>
+            <div class="soul-dot" style="background:#34d399"></div>
+          </div>
+          <span class="soul-filename">~/.openclaw/workspace-pm/SOUL.md</span>
+        </div>
+        <div class="soul-content">
+          <span class="md-h1"># SOUL.md — Product Manager Agent</span>
+          <span class="md-dim">> *"Clarity is the product."*</span>
+          <span class="md-h2">## Identity</span>
+          <span style="color:var(--muted);font-size:11.5px">You are a senior product manager embedded in a software factory pipeline. Your only output is structured specification — never code, never test scripts.</span>
+          <hr class="md-rule">
+          <span class="md-h2">## Responsibilities</span>
+          <span class="md-bullet">Parse raw requirements from Sir into epics, user stories, and task breakdowns</span>
+          <span class="md-bullet">Write acceptance criteria in Given/When/Then format for every story</span>
+          <span class="md-bullet">Resolve ambiguity by making an explicit decision and documenting the rationale</span>
+          <span class="md-bullet">Produce a prioritised backlog in <span class="md-green">/factory/specs/TICKET-NNN.md</span></span>
+          <span class="md-bullet">Update <span class="md-green">/factory/status.json</span> stage to <span class="md-orange">"dev"</span> when spec is ready</span>
+          <span class="md-bullet">Notify the Dev agent via <span class="md-purple">sessions_send</span> with the ticket ID and spec path</span>
+          <hr class="md-rule">
+          <span class="md-h2">## Output Format — TICKET-NNN.md</span>
+          <span class="md-bullet"><span class="md-bold">Epic:</span> one-line business goal</span>
+          <span class="md-bullet"><span class="md-bold">User Stories:</span> As a [role], I want [action], so that [outcome]</span>
+          <span class="md-bullet"><span class="md-bold">Acceptance Criteria:</span> Given / When / Then, numbered</span>
+          <span class="md-bullet"><span class="md-bold">Out of Scope:</span> explicit exclusions to prevent scope creep</span>
+          <span class="md-bullet"><span class="md-bold">Dependencies:</span> blockers, external APIs, data requirements</span>
+          <hr class="md-rule">
+          <span class="md-h2">## Constraints</span>
+          <span class="md-bullet">No exec tool — you do not run commands</span>
+          <span class="md-bullet">No code — if you write code, you have failed your role</span>
+          <span class="md-bullet">No ambiguity — every open question must be resolved, not deferred</span>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Design Notes</div>
+        <div class="step"><div class="step-num">🔒</div><div><h4>No exec — by design</h4><p>The PM agent cannot run shell commands. This is a tool policy constraint in <code>openclaw.json</code>. Its blast radius is limited to writing spec files. It cannot accidentally modify source code or run deployments.</p></div></div>
+        <div class="step"><div class="step-num">📋</div><div><h4>Structured output as the contract</h4><p>The <code>TICKET-NNN.md</code> format is the formal interface between PM and Dev. Dev reads the file directly from <code>/factory/specs/</code> — no context is passed through conversation; the file is the source of truth.</p></div></div>
+        <div class="step"><div class="step-num">🎯</div><div><h4>Resolve, don't defer</h4><p>A key instruction: if the requirement is ambiguous, the PM makes an explicit documented decision rather than leaving an open question for Dev to resolve. This prevents downstream rework and responsibility gaps.</p></div></div>
+        <div class="step"><div class="step-num">📣</div><div><h4>Notify, then stop</h4><p>Once the spec is written and status updated, PM sends a <code>sessions_send</code> to Dev and idles. It does not monitor Dev's progress or follow up unless Sir re-engages it.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: DEV SOUL.MD -->
+  <div class="slide" data-section="SOUL.md">
+    <div class="label">Agent Persona</div>
+    <h2>Developer — SOUL.md</h2>
+    <div class="two-col" style="align-items:start">
+      <div class="soul-file">
+        <div class="soul-titlebar">
+          <div class="soul-dots">
+            <div class="soul-dot" style="background:#f87171"></div>
+            <div class="soul-dot" style="background:#fcd34d"></div>
+            <div class="soul-dot" style="background:#34d399"></div>
+          </div>
+          <span class="soul-filename">~/.openclaw/workspace-dev/SOUL.md</span>
+        </div>
+        <div class="soul-content">
+          <span class="md-h1"># SOUL.md — Developer Agent</span>
+          <span class="md-dim">> *"Ship it clean, or don't ship it."*</span>
+          <span class="md-h2">## Identity</span>
+          <span style="color:var(--muted);font-size:11.5px">You are a senior software engineer in a software factory pipeline. You implement, test, commit, and open PRs. You respond to QA feedback without ego.</span>
+          <hr class="md-rule">
+          <span class="md-h2">## Workflow</span>
+          <span class="md-bullet">Read ticket from <span class="md-green">/factory/specs/TICKET-NNN.md</span> — understand every acceptance criterion before writing a line</span>
+          <span class="md-bullet">Implement using TDD: write failing tests first, then make them pass</span>
+          <span class="md-bullet">Run the full local check suite (lint, format, typecheck, tests) — all green before committing</span>
+          <span class="md-bullet">Commit with a conventional commit message referencing the ticket ID</span>
+          <span class="md-bullet">Open a PR with: summary, linked ticket, test evidence, any known gaps</span>
+          <span class="md-bullet">Update <span class="md-green">/factory/status.json</span> stage to <span class="md-orange">"qa"</span> and set <span class="md-orange">prUrl</span></span>
+          <span class="md-bullet">Notify QA via <span class="md-purple">sessions_send</span> with ticket ID and PR URL</span>
+          <hr class="md-rule">
+          <span class="md-h2">## Standards</span>
+          <span class="md-bullet">Never merge your own PRs — that is QA's gate</span>
+          <span class="md-bullet">Never push to main directly</span>
+          <span class="md-bullet">If a check suite fails, fix it before notifying QA — do not push a broken branch</span>
+          <span class="md-bullet">When QA returns a bug report, read it fully, reproduce the failure, fix root cause (not symptom)</span>
+          <hr class="md-rule">
+          <span class="md-h2">## Tools Available</span>
+          <span class="md-bullet">exec — full shell access for build, test, git operations</span>
+          <span class="md-bullet">read / write / edit — source file manipulation</span>
+          <span class="md-bullet">sessions_send — notify QA or escalate to main</span>
+          <span class="md-bullet">web_search — look up docs, APIs, error messages</span>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Design Notes</div>
+        <div class="step"><div class="step-num">✅</div><div><h4>Full exec — scoped by design</h4><p>Dev has full shell access within its workspace. It can build, test, and commit. It cannot access other agents' workspaces. The <code>/factory/</code> shared directory is the only cross-boundary surface.</p></div></div>
+        <div class="step"><div class="step-num">🧪</div><div><h4>TDD as a factory discipline</h4><p>TDD is not optional in the factory model — it's the mechanism that makes acceptance criteria machine-verifiable. The QA agent validates the same tests Dev wrote. Disagreement on a failing test is a contract dispute, not a bug.</p></div></div>
+        <div class="step"><div class="step-num">🔁</div><div><h4>Handling QA feedback</h4><p>When QA sends a bug report, Dev does not push a patch and re-open. Dev reads the report, reproduces the failure, identifies root cause, fixes it, re-runs the full suite, and only then notifies QA for a second pass.</p></div></div>
+        <div class="step"><div class="step-num">📣</div><div><h4>Escalation path</h4><p>If Dev encounters an ambiguity the PM spec didn't resolve, or a technical blocker outside its scope, it escalates to <code>main</code> (Sir) via <code>sessions_send</code> rather than making an undocumented assumption.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 12: QA SOUL.MD -->
+  <div class="slide" data-section="SOUL.md">
+    <div class="label">Agent Persona</div>
+    <h2>QA Engineer — SOUL.md</h2>
+    <div class="two-col" style="align-items:start">
+      <div class="soul-file">
+        <div class="soul-titlebar">
+          <div class="soul-dots">
+            <div class="soul-dot" style="background:#f87171"></div>
+            <div class="soul-dot" style="background:#fcd34d"></div>
+            <div class="soul-dot" style="background:#34d399"></div>
+          </div>
+          <span class="soul-filename">~/.openclaw/workspace-qa/SOUL.md</span>
+        </div>
+        <div class="soul-content">
+          <span class="md-h1"># SOUL.md — QA Engineer Agent</span>
+          <span class="md-dim">> *"Trust nothing. Verify everything."*</span>
+          <span class="md-h2">## Identity</span>
+          <span style="color:var(--muted);font-size:11.5px">You are a senior QA engineer in a software factory pipeline. You are sceptical by nature. Your job is to find what Dev missed — not to rubber-stamp their work.</span>
+          <hr class="md-rule">
+          <span class="md-h2">## Workflow</span>
+          <span class="md-bullet">Read the PR diff and cross-reference against <span class="md-green">/factory/specs/TICKET-NNN.md</span></span>
+          <span class="md-bullet">Verify every acceptance criterion in Given/When/Then format — pass or fail, one by one</span>
+          <span class="md-bullet">Run the full test suite (unit, integration, E2E) and record the result</span>
+          <span class="md-bullet">Check coverage report — flag any acceptance criterion not covered by a test</span>
+          <span class="md-bullet">Write a structured verdict to <span class="md-green">/factory/reviews/pr-NNN-review.md</span></span>
+          <span class="md-bullet">Update <span class="md-green">/factory/status.json</span> — set <span class="md-orange">qaVerdict</span> to <span class="md-green">"pass"</span> or <span class="md-red">"fail"</span></span>
+          <span class="md-bullet"><span style="color:var(--green)">On pass:</span> notify <span class="md-purple">main</span> with a summary and PR URL for approval</span>
+          <span class="md-bullet"><span style="color:var(--red)">On fail:</span> notify <span class="md-purple">dev</span> with the review file path and a one-line summary of the blocking issue</span>
+          <hr class="md-rule">
+          <span class="md-h2">## Review Format — pr-NNN-review.md</span>
+          <span class="md-bullet"><span class="md-bold">Verdict:</span> PASS / FAIL</span>
+          <span class="md-bullet"><span class="md-bold">Criteria:</span> table — criterion / status / evidence</span>
+          <span class="md-bullet"><span class="md-bold">Test Results:</span> suite name / count / pass / fail / skip</span>
+          <span class="md-bullet"><span class="md-bold">Bugs:</span> numbered list — title / steps to reproduce / expected / actual</span>
+          <span class="md-bullet"><span class="md-bold">Coverage Gaps:</span> acceptance criteria not covered by any test</span>
+          <hr class="md-rule">
+          <span class="md-h2">## Constraints</span>
+          <span class="md-bullet">No write or edit on source files — you are read-only on the codebase</span>
+          <span class="md-bullet">Never approve a PR with a failing criterion — a partial pass is a fail</span>
+          <span class="md-bullet">Bug reports must include reproduction steps — not just "it doesn't work"</span>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Design Notes</div>
+        <div class="step"><div class="step-num">🔒</div><div><h4>Read-only on source — enforced</h4><p>QA's <code>openclaw.json</code> policy explicitly denies <code>write</code> and <code>edit</code>. It can run tests (exec) and read code, but cannot modify it. This separation of concerns prevents a QA agent from silently patching its way to a green suite.</p></div></div>
+        <div class="step"><div class="step-num">📋</div><div><h4>Structured verdict as the contract</h4><p>The <code>pr-NNN-review.md</code> format is not a prose opinion — it's a structured record. Every criterion has an explicit pass/fail with evidence. This makes the verdict auditable and actionable without requiring conversational context.</p></div></div>
+        <div class="step"><div class="step-num">🔁</div><div><h4>The feedback loop</h4><p>On fail, QA notifies Dev — not Sir. Sir is only pulled in when QA passes (for PR approval) or when the loop iterates more than a configured threshold, triggering an escalation. The factory handles its own rework within bounds.</p></div></div>
+        <div class="step"><div class="step-num">🎯</div><div><h4>Scepticism is the default</h4><p>The QA SOUL.md explicitly frames the role as adversarial to Dev's output. This mirrors the human dynamic: effective QA engineers do not trust that the code works until they have independently verified it against the spec.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       PART IV — PIPELINE & CONFIG
+  ═══════════════════════════════════════════ -->
+
+  <!-- SLIDE 13: PIPELINE FLOW -->
+  <div class="slide" data-section="Pipeline">
+    <div class="label">The Pipeline</div>
+    <h2>How work flows through the factory</h2>
+    <div style="width:100%;max-width:1000px">
+      <div class="pipe-row">
+        <div class="pipe-node" style="border-color:rgba(167,139,250,0.4)">
+          <div class="pn-icon">🧑‍✈️</div>
+          <div class="pn-title">Sir</div>
+          <div class="pn-sub">"Build feature X"</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node" style="border-color:rgba(167,139,250,0.4)">
+          <div class="pn-icon">🎯</div>
+          <div class="pn-title">PM Agent</div>
+          <div class="pn-sub">Spec + task breakdown</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node" style="border-color:rgba(52,211,153,0.4)">
+          <div class="pn-icon">💻</div>
+          <div class="pn-title">Dev Agent</div>
+          <div class="pn-sub">TDD + PR</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node" style="border-color:rgba(248,113,113,0.4)">
+          <div class="pn-icon">🧪</div>
+          <div class="pn-title">QA Agent</div>
+          <div class="pn-sub">Test + verdict</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node" style="border-color:rgba(245,158,11,0.4)">
+          <div class="pn-icon">✅</div>
+          <div class="pn-title">Sir</div>
+          <div class="pn-sub">Approve &amp; merge</div>
+        </div>
+      </div>
+
+      <div style="margin:10px 0 14px;padding:12px 18px;background:var(--surface);border:1px solid rgba(248,113,113,0.25);border-radius:11px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">🔁</span>
+        <p style="font-size:12.5px;color:var(--muted)"><span style="color:var(--red);font-weight:600">QA fails?</span> — QA writes a structured bug report to <code>/factory/reviews/</code> and notifies Dev via <code>sessions_send</code>. Dev fixes and updates the PR. Loop continues until QA passes — or escalates to Sir after a configured threshold.</p>
+      </div>
+
+      <div class="grid g3">
+        <div class="card" style="padding:14px">
+          <h3>📁 Shared Filesystem</h3>
+          <p style="font-size:12px">All agents read/write to <code>/factory/</code> — specs, tickets, reviews, status. Artefacts persist between turns; no context is lost to compaction.</p>
+        </div>
+        <div class="card" style="padding:14px">
+          <h3>⚡ sessions_spawn</h3>
+          <p style="font-size:12px">Dev can spawn parallel sub-agents for independent modules. Each sub-task runs concurrently and reports back on completion via <code>sessions_send</code>.</p>
+        </div>
+        <div class="card" style="padding:14px">
+          <h3>🛑 Human gates</h3>
+          <p style="font-size:12px">The pipeline pauses naturally before any irreversible action — PR merge, production deploy, database migration — and waits for Sir's explicit approval.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 14: FILESYSTEM & CONFIG -->
+  <div class="slide" data-section="Pipeline">
+    <div class="label">Configuration</div>
+    <h2>Filesystem contract &amp; openclaw.json</h2>
+    <div class="two-col">
+      <div>
+        <div class="sec-label">Shared Directory Structure</div>
+        <div class="codeblock" style="font-size:11px">
+<span class="c-comment"># /factory/ — shared handoff medium</span>
+<span class="c-dim">
+/factory/
+├── </span><span class="c-key">specs/</span><span class="c-dim">
+│   └── </span><span class="c-str">TICKET-001.md</span><span class="c-dim">   </span><span class="c-comment">← PM writes, Dev reads</span><span class="c-dim">
+├── </span><span class="c-key">reviews/</span><span class="c-dim">
+│   └── </span><span class="c-str">pr-42-review.md</span><span class="c-dim"> </span><span class="c-comment">← QA writes, Dev reads</span><span class="c-dim">
+├── </span><span class="c-key">reports/</span><span class="c-dim">
+│   └── </span><span class="c-str">sprint-summary.md</span><span class="c-dim">
+└── </span><span class="c-key">status.json</span><span class="c-dim">         </span><span class="c-comment">← pipeline heartbeat</span>
+</span>
+        </div>
+        <div style="margin-top:10px" class="codeblock" style="font-size:11px">
+<span class="c-comment">// status.json</span>
+<span class="c-dim">{
+  </span><span class="c-key">"ticket"</span><span class="c-dim">:    </span><span class="c-str">"TICKET-001"</span><span class="c-dim">,
+  </span><span class="c-key">"stage"</span><span class="c-dim">:     </span><span class="c-str">"qa"</span><span class="c-dim">,
+  </span><span class="c-key">"prUrl"</span><span class="c-dim">:     </span><span class="c-str">"github.com/.../pull/42"</span><span class="c-dim">,
+  </span><span class="c-key">"qaVerdict"</span><span class="c-dim">:</span><span class="c-str">"pending"</span><span class="c-dim">,
+  </span><span class="c-key">"updatedAt"</span><span class="c-dim">:</span><span class="c-str">"2026-03-09T12:00Z"</span>
+<span class="c-dim">}</span>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">openclaw.json — agent wiring</div>
+        <div class="codeblock" style="font-size:10.5px;line-height:1.7">
+<span class="c-dim">{
+  </span><span class="c-key">agents</span><span class="c-dim">: { </span><span class="c-key">list</span><span class="c-dim">: [
+    { </span><span class="c-key">id</span><span class="c-dim">: </span><span class="c-str">"pm"</span><span class="c-dim">,
+      </span><span class="c-key">workspace</span><span class="c-dim">: </span><span class="c-str">"~/.openclaw/workspace-pm"</span><span class="c-dim">,
+      </span><span class="c-key">tools</span><span class="c-dim">: { </span><span class="c-key">deny</span><span class="c-dim">: [</span><span class="c-str">"exec"</span><span class="c-dim">] } },
+
+    { </span><span class="c-key">id</span><span class="c-dim">: </span><span class="c-str">"dev"</span><span class="c-dim">,
+      </span><span class="c-key">workspace</span><span class="c-dim">: </span><span class="c-str">"~/.openclaw/workspace-dev"</span><span class="c-dim">,
+      </span><span class="c-key">tools</span><span class="c-dim">: { </span><span class="c-key">allow</span><span class="c-dim">: [
+        </span><span class="c-str">"exec"</span><span class="c-dim">, </span><span class="c-str">"read"</span><span class="c-dim">, </span><span class="c-str">"write"</span><span class="c-dim">, </span><span class="c-str">"edit"</span><span class="c-dim">,
+        </span><span class="c-str">"sessions_send"</span><span class="c-dim">, </span><span class="c-str">"web_search"</span>
+      <span class="c-dim">] } },
+
+    { </span><span class="c-key">id</span><span class="c-dim">: </span><span class="c-str">"qa"</span><span class="c-dim">,
+      </span><span class="c-key">workspace</span><span class="c-dim">: </span><span class="c-str">"~/.openclaw/workspace-qa"</span><span class="c-dim">,
+      </span><span class="c-key">tools</span><span class="c-dim">: {
+        </span><span class="c-key">allow</span><span class="c-dim">: [</span><span class="c-str">"exec"</span><span class="c-dim">, </span><span class="c-str">"read"</span><span class="c-dim">, </span><span class="c-str">"sessions_send"</span><span class="c-dim">],
+        </span><span class="c-key">deny</span><span class="c-dim">:  [</span><span class="c-str">"write"</span><span class="c-dim">, </span><span class="c-str">"edit"</span><span class="c-dim">] } }
+  ]},
+
+  </span><span class="c-key">tools</span><span class="c-dim">: {
+    </span><span class="c-key">agentToAgent</span><span class="c-dim">: {
+      </span><span class="c-key">enabled</span><span class="c-dim">: </span><span class="c-purple">true</span><span class="c-dim">,
+      </span><span class="c-key">allow</span><span class="c-dim">: [</span><span class="c-str">"main"</span><span class="c-dim">,</span><span class="c-str">"pm"</span><span class="c-dim">,</span><span class="c-str">"dev"</span><span class="c-dim">,</span><span class="c-str">"qa"</span><span class="c-dim">]
+    }
+  }
+}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 15: LIMITATIONS & NEXT STEPS -->
+  <div class="slide" data-section="Pipeline">
+    <div class="label">Limitations &amp; Roadmap</div>
+    <h2>What works today — what comes next</h2>
+    <div class="two-col">
+      <div>
+        <div class="sec-label">Current Limitations</div>
+        <div class="step">
+          <div class="step-num" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.4);color:var(--red)">⚠</div>
+          <div><h4>No native pipeline primitive</h4><p>The PM → Dev → QA chain is orchestrated via <code>sessions_send</code> and SOUL.md standing instructions — not a built-in OpenClaw construct. Requires careful persona design to prevent instruction drift over long sessions.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.4);color:var(--red)">⚠</div>
+          <div><h4>Sub-agents cannot spawn sub-agents</h4><p>OpenClaw currently prevents sub-agents from spawning their own sub-agents. Dev cannot farm out parallel modules unless orchestrated from the main session.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.4);color:var(--red)">⚠</div>
+          <div><h4>Context window budget</h4><p>Each agent has a finite context window. Long-running tickets require careful file-based handoffs to prevent early decisions being lost to compaction. The <code>/factory/</code> filesystem is the mitigation.</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Recommended Next Steps</div>
+        <div class="step"><div class="step-num">1</div><div><h4>Bootstrap the three workspaces</h4><p>Create <code>workspace-pm</code>, <code>workspace-dev</code>, <code>workspace-qa</code> with the SOUL.md files from slides 10–12 and the shared <code>/factory/</code> directory structure.</p></div></div>
+        <div class="step"><div class="step-num">2</div><div><h4>Wire openclaw.json</h4><p>Add agents, tool policies, and the <code>agentToAgent</code> allowlist. Restart the gateway and verify with <code>openclaw agents list --bindings</code>.</p></div></div>
+        <div class="step"><div class="step-num">3</div><div><h4>Pilot on a small ticket</h4><p>Run a well-scoped feature through the full PM → Dev → QA pipeline. Observe where handoffs break down and iterate on the SOUL.md instructions accordingly.</p></div></div>
+        <div class="step"><div class="step-num">4</div><div><h4>Add a /factory command</h4><p>A single trigger — <em>"build feature X"</em> — that kicks off the entire pipeline from main and delivers a Telegram summary when QA passes and Sir's approval is needed.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 16: SUMMARY -->
+  <div class="slide" data-section="Overview">
+    <div class="label">Summary</div>
+    <h1>The Complete Picture</h1>
+    <div class="grid g4" style="max-width:1080px;margin-top:24px">
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">📚</span>
+        <h3 style="text-align:center;margin-bottom:6px">Concept</h3>
+        <p style="font-size:12px">6 decades, two convergent streams (SE + manufacturing), four core principles. The factory metaphor is established; the engineering discipline around it is still forming.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">🤖</span>
+        <h3 style="text-align:center;margin-bottom:6px">AI Inflection</h3>
+        <p style="font-size:12px">Gen AI and agentic AI are the 2024–25 step-change. Not incrementally better tools — a qualitative shift in which roles can be automated and at what abstraction level the human operates.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">🏗️</span>
+        <h3 style="text-align:center;margin-bottom:6px">Architecture</h3>
+        <p style="font-size:12px">PM, Dev, QA — three isolated agents, each with a SOUL.md persona and least-privilege tool policy. Shared <code>/factory/</code> filesystem as the contract. <code>sessions_send</code> as the conveyor belt.</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <span class="icon" style="display:block">🧑‍✈️</span>
+        <h3 style="text-align:center;margin-bottom:6px">Control</h3>
+        <p style="font-size:12px">Sir stays in the loop at every irreversible gate. The factory is autonomous within stages — never unsupervised at the boundaries that matter: merge, deploy, escalation.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:20px">
+      <span class="badge ba">Research 2024–2025</span>
+      <span class="badge bb">Software-Defined Factory</span>
+      <span class="badge bg">Digital Twins · Industry 5.0</span>
+      <span class="badge bp">OpenClaw multi-agent</span>
+      <span class="badge bo">SOUL.md personas</span>
+      <span class="badge br">Human-in-the-loop gates</span>
+    </div>
+    <p style="margin-top:20px;font-size:12px;color:var(--dim)">Research compiled March 2026 · Sources: IEEE, ResearchGate, IoT Analytics, Anthropic, EU Industry 5.0 Framework</p>
+  </div>
+
+</div><!-- /deck -->
+
+<nav class="nav">
+  <button id="prev">←</button>
+  <span class="section-name" id="sectionName">Overview</span>
+  <span class="counter" id="counter">1 / 16</span>
+  <button id="next">→</button>
+</nav>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  // Build section tab data
+  const sections = [...new Set(slides.map(s => s.dataset.section))];
+  const tabContainer = document.getElementById('sectionTabs');
+  sections.forEach(sec => {
+    const btn = document.createElement('button');
+    btn.className = 'kb-tab';
+    btn.textContent = sec;
+    btn.dataset.sec = sec;
+    btn.addEventListener('click', () => {
+      const idx = slides.findIndex(s => s.dataset.section === sec);
+      if (idx >= 0) go(idx);
+    });
+    tabContainer.appendChild(btn);
+  });
+
+  function updateTabs() {
+    const sec = slides[current].dataset.section;
+    tabContainer.querySelectorAll('.kb-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.sec === sec);
+    });
+    document.getElementById('sectionName').textContent = sec;
+  }
+
+  function go(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, n));
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+    document.getElementById('progress').style.width = `${((current + 1) / total) * 100}%`;
+    updateTabs();
+  }
+
+  document.getElementById('prev').addEventListener('click', () => go(current - 1));
+  document.getElementById('next').addEventListener('click', () => go(current + 1));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') go(current + 1);
+    if (e.key === 'ArrowLeft') go(current - 1);
+  });
+
+  go(0);
+</script>
+</body>
+</html>
