@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TICKET-001 Architecture — Software Factory</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #ffffff;
+      color: #1a1a1a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    /* Amber approval banner */
+    .approval-banner {
+      background: #fff3cd;
+      border: 2px solid #f0a500;
+      border-radius: 6px;
+      color: #7d5a00;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 1rem 1.4rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    /* Header block */
+    .doc-header {
+      border-bottom: 2px solid #e0e0e0;
+      margin-bottom: 2rem;
+      padding-bottom: 1.2rem;
+    }
+    .doc-header .factory-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 0.4rem;
+    }
+    .doc-header h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 0.5rem;
+    }
+    .doc-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .doc-meta span strong {
+      color: #333;
+    }
+    /* Section headings */
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #111;
+      margin: 2.5rem 0 0.8rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #222;
+      margin: 1.5rem 0 0.5rem;
+    }
+    /* Paragraphs & lists */
+    p { margin-bottom: 0.9rem; }
+    ul, ol {
+      padding-left: 1.6rem;
+      margin-bottom: 0.9rem;
+    }
+    li { margin-bottom: 0.3rem; }
+    /* Code blocks */
+    pre {
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1.2rem;
+      white-space: pre;
+    }
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.85em;
+      background: #f0f0f0;
+      border-radius: 3px;
+      padding: 0.1em 0.35em;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: inherit;
+      border-radius: 0;
+    }
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.4rem;
+      font-size: 0.88rem;
+    }
+    thead tr {
+      background: #f6f6f6;
+    }
+    th, td {
+      border: 1px solid #d0d0d0;
+      padding: 0.55rem 0.8rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-weight: 600;
+      color: #333;
+    }
+    tr:nth-child(even) td { background: #fafafa; }
+    /* Blockquote / note */
+    blockquote {
+      border-left: 4px solid #ccc;
+      margin: 1rem 0;
+      padding: 0.6rem 1rem;
+      color: #555;
+      font-style: italic;
+      background: #f9f9f9;
+      border-radius: 0 4px 4px 0;
+    }
+    /* Footer */
+    .doc-footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e0e0e0;
+      font-size: 0.8rem;
+      color: #999;
+      text-align: center;
+    }
+    strong { font-weight: 700; }
+    em { font-style: italic; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Approval Banner -->
+  <div class="approval-banner">
+    ⏳ AWAITING SIR'S APPROVAL — Not yet approved for implementation
+  </div>
+
+  <!-- Document Header -->
+  <div class="doc-header">
+    <div class="factory-label">Software Factory — Architecture Review</div>
+    <h1>TICKET-001: Book Library Management System</h1>
+    <div class="doc-meta">
+      <span><strong>Ticket ID:</strong> TICKET-001</span>
+      <span><strong>Date:</strong> 2026-03-12</span>
+      <span><strong>Architect:</strong> Architect Agent</span>
+      <span><strong>Status:</strong> Awaiting Approval</span>
+    </div>
+  </div>
+
+  <!-- Section 1: Overview -->
+  <h2>1. Overview</h2>
+  <p>A full-stack, web-based library management system with two user roles (librarian, member), a RESTful JSON API backend, and a lightweight server-rendered HTML frontend. The system manages a catalogue of books and tracks borrow/return circulation.</p>
+
+  <!-- Section 2: Technology Stack -->
+  <h2>2. Technology Stack</h2>
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>Choice</th><th>Rationale</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Backend runtime</td><td><strong>Node.js 20 LTS (ESM)</strong></td><td>Widely available, fast to scaffold, excellent ecosystem for REST APIs</td></tr>
+      <tr><td>Web framework</td><td><strong>Express 4</strong></td><td>Minimal, well-understood, no magic</td></tr>
+      <tr><td>ORM / Query builder</td><td><strong>Prisma 5</strong></td><td>Type-safe schema, easy migrations, SQLite/PostgreSQL dual support</td></tr>
+      <tr><td>Database (dev)</td><td><strong>SQLite</strong> (file <code>library.db</code>)</td><td>Zero-config local dev</td></tr>
+      <tr><td>Database (prod)</td><td><strong>PostgreSQL 15</strong></td><td>Robust, production-ready</td></tr>
+      <tr><td>Authentication</td><td><strong>express-session</strong> + <strong>bcrypt</strong></td><td>Cookie-based sessions, passwords hashed with bcrypt cost factor 12</td></tr>
+      <tr><td>Frontend</td><td><strong>Server-rendered HTML</strong> via <strong>Nunjucks</strong> templates</td><td>No build step; fulfils the "web-responsive UI" requirement; SSR avoids SPA complexity</td></tr>
+      <tr><td>CSS</td><td><strong>Pico.css</strong> (classless CDN)</td><td>Responsive out of the box, no custom stylesheet required</td></tr>
+      <tr><td>Testing</td><td><strong>Vitest</strong> + <strong>supertest</strong></td><td>Unit and integration tests over HTTP</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Section 3: Repository Layout -->
+  <h2>3. Repository Layout</h2>
+  <pre><code>library/
+├── prisma/
+│   ├── schema.prisma       # Data model + migrations
+│   └── seed.js             # Seed librarian + member credentials
+├── src/
+│   ├── app.js              # Express app factory (no listen — testable)
+│   ├── server.js           # Entry point: creates app and binds port
+│   ├── middleware/
+│   │   ├── auth.js         # requireLogin, requireRole(role)
+│   │   └── flash.js        # Flash message helper
+│   ├── routes/
+│   │   ├── auth.js         # GET/POST /login, POST /logout
+│   │   ├── books.js        # CRUD /books and /books/:id
+│   │   ├── members.js      # CRUD /members
+│   │   ├── loans.js        # POST /loans (borrow), PATCH /loans/:id/return
+│   │   ├── catalogue.js    # GET /catalogue (search — public within session)
+│   │   └── dashboard.js    # GET /dashboard (member my-loans)
+│   ├── views/              # Nunjucks templates
+│   │   ├── layout.njk
+│   │   ├── login.njk
+│   │   ├── books/
+│   │   ├── members/
+│   │   ├── loans/
+│   │   ├── catalogue/
+│   │   └── dashboard/
+│   └── lib/
+│       └── prismaClient.js # Singleton Prisma instance
+├── tests/
+│   ├── auth.test.js
+│   ├── books.test.js
+│   ├── members.test.js
+│   └── loans.test.js
+├── .env.example
+├── package.json
+└── README.md</code></pre>
+
+  <!-- Section 4: Data Model -->
+  <h2>4. Data Model (Prisma Schema)</h2>
+  <pre><code>// prisma/schema.prisma
+
+datasource db {
+  provider = "sqlite"           // override to "postgresql" via env
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  passwordHash   String
+  role           Role     @default(MEMBER)
+  name           String
+  membershipNumber String? @unique  // null for librarians
+  createdAt      DateTime @default(now())
+
+  loans          Loan[]
+}
+
+enum Role {
+  LIBRARIAN
+  MEMBER
+}
+
+model Book {
+  id        Int      @id @default(autoincrement())
+  title     String
+  author    String
+  isbn      String   @unique
+  genre     String
+  quantity  Int      @default(1)  // total copies owned
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  loans     Loan[]
+}
+
+model Loan {
+  id           Int       @id @default(autoincrement())
+  book         Book      @relation(fields: [bookId], references: [id])
+  bookId       Int
+  member       User      @relation(fields: [memberId], references: [id])
+  memberId     Int
+  borrowedAt   DateTime  @default(now())
+  dueDate      DateTime
+  returnedAt   DateTime?
+  status       LoanStatus @default(ACTIVE)
+}
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+}</code></pre>
+
+  <p><strong>Derived field: <code>availableCopies</code></strong><br/>
+  Not stored. Computed at query time as:</p>
+  <pre><code>availableCopies = book.quantity - COUNT(loans WHERE bookId = book.id AND status = 'ACTIVE')</code></pre>
+  <p>This is done in the service layer (not in the DB schema) to avoid stale denormalised data.</p>
+
+  <!-- Section 5: REST API Contract -->
+  <h2>5. REST API Contract</h2>
+  <p>All endpoints return JSON when called with <code>Accept: application/json</code>; otherwise they redirect to the server-rendered view. This dual-mode pattern lets the Nunjucks frontend and any future SPA share the same routes.</p>
+
+  <h3>5.1 Authentication</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/login</code></td><td>Public</td><td>Render login form</td></tr>
+      <tr><td>POST</td><td><code>/login</code></td><td>Public</td><td>Authenticate; set session cookie</td></tr>
+      <tr><td>POST</td><td><code>/logout</code></td><td>Authenticated</td><td>Destroy session</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Session payload stored server-side:</strong></p>
+  <pre><code>{ "userId": 1, "role": "LIBRARIAN" }</code></pre>
+
+  <h3>5.2 Books</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/books</code></td><td>LIBRARIAN</td><td>List all books (paginated, 20/page)</td></tr>
+      <tr><td>GET</td><td><code>/books/new</code></td><td>LIBRARIAN</td><td>Render add-book form</td></tr>
+      <tr><td>POST</td><td><code>/books</code></td><td>LIBRARIAN</td><td>Create book</td></tr>
+      <tr><td>GET</td><td><code>/books/:id/edit</code></td><td>LIBRARIAN</td><td>Render edit form</td></tr>
+      <tr><td>PUT</td><td><code>/books/:id</code></td><td>LIBRARIAN</td><td>Update book</td></tr>
+      <tr><td>DELETE</td><td><code>/books/:id</code></td><td>LIBRARIAN</td><td>Delete book (blocked if active loans)</td></tr>
+    </tbody>
+  </table>
+  <p><strong>POST /books body:</strong></p>
+  <pre><code>{
+  "title": "string, required",
+  "author": "string, required",
+  "isbn": "string, required, unique",
+  "genre": "string, required",
+  "quantity": "integer ≥ 1, required"
+}</code></pre>
+  <p><strong>Error responses:</strong></p>
+  <ul>
+    <li><code>409 Conflict</code> — duplicate ISBN</li>
+    <li><code>422 Unprocessable</code> — validation failure (missing fields, quantity &lt; 1)</li>
+    <li><code>400 Bad Request</code> — delete blocked due to active loans (body: <code>{ "error": "Book has active loans and cannot be deleted." }</code>)</li>
+  </ul>
+
+  <h3>5.3 Members</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/members</code></td><td>LIBRARIAN</td><td>List all members</td></tr>
+      <tr><td>GET</td><td><code>/members/new</code></td><td>LIBRARIAN</td><td>Render registration form</td></tr>
+      <tr><td>POST</td><td><code>/members</code></td><td>LIBRARIAN</td><td>Register member</td></tr>
+    </tbody>
+  </table>
+  <p><strong>POST /members body:</strong></p>
+  <pre><code>{
+  "name": "string, required",
+  "email": "string, required, unique",
+  "membershipNumber": "string, required, unique",
+  "password": "string, required, min 8 chars"
+}</code></pre>
+  <p><strong>Error responses:</strong></p>
+  <ul>
+    <li><code>409 Conflict</code> — email or membershipNumber already in use</li>
+  </ul>
+
+  <h3>5.4 Loans</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>POST</td><td><code>/loans</code></td><td>LIBRARIAN</td><td>Create loan (borrow)</td></tr>
+      <tr><td>PATCH</td><td><code>/loans/:id/return</code></td><td>LIBRARIAN</td><td>Record return</td></tr>
+      <tr><td>GET</td><td><code>/loans/overdue</code></td><td>LIBRARIAN</td><td>List all overdue loans</td></tr>
+    </tbody>
+  </table>
+  <p><strong>POST /loans body:</strong></p>
+  <pre><code>{
+  "bookId": "integer, required",
+  "memberId": "integer, required"
+}</code></pre>
+  <ul>
+    <li><code>dueDate</code> is set to <code>now + 14 days</code> server-side — not accepted from client.</li>
+    <li><code>409 Conflict</code> if <code>availableCopies == 0</code>.</li>
+  </ul>
+  <p><strong>GET /loans/overdue response:</strong></p>
+  <pre><code>[
+  {
+    "loanId": 5,
+    "memberName": "Jane Doe",
+    "bookTitle": "Dune",
+    "dueDate": "2026-02-26",
+    "daysOverdue": 14
+  }
+]</code></pre>
+
+  <h3>5.5 Catalogue (search)</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/catalogue?q=&lt;string&gt;</code></td><td>Authenticated (any role)</td><td>Search books</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>Matches title, author, or genre via case-insensitive <code>LIKE '%q%'</code>.</li>
+    <li>Response includes: <code>id, title, author, genre, availableCopies</code>.</li>
+    <li>Returns <code>[]</code> (empty array) with HTTP 200 when no results.</li>
+  </ul>
+
+  <h3>5.6 Member Dashboard</h3>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/dashboard</code></td><td>MEMBER</td><td>View own active loans</td></tr>
+    </tbody>
+  </table>
+  <p>Response per loan: <code>bookTitle, borrowedAt, dueDate, daysRemaining</code>.<br/>
+  <code>daysRemaining</code> is computed as <code>floor((dueDate - now) / 86400000)</code> — may be negative for overdue loans shown in dashboard (displayed in red).</p>
+
+  <!-- Section 6: Auth & Authorisation -->
+  <h2>6. Authentication &amp; Authorisation</h2>
+  <ul>
+    <li><strong>Session store:</strong> in-memory for development; <code>connect-pg-simple</code> in production (same Postgres DB).</li>
+    <li><strong>Session cookie:</strong> <code>httpOnly: true</code>, <code>sameSite: 'lax'</code>, <code>secure: true</code> in production.</li>
+    <li><strong>Password hashing:</strong> <code>bcrypt.hash(password, 12)</code> on registration/seed; <code>bcrypt.compare</code> on login.</li>
+    <li><strong>Middleware:</strong>
+      <ul>
+        <li><code>requireLogin</code> — redirects to <code>/login</code> if no session.</li>
+        <li><code>requireRole('LIBRARIAN')</code> — returns <code>403</code> if logged-in user is not a librarian.</li>
+      </ul>
+    </li>
+    <li>Librarians can access all routes. Members can only access <code>/catalogue</code>, <code>/dashboard</code>, and auth routes.</li>
+  </ul>
+
+  <!-- Section 7: Seed Data -->
+  <h2>7. Seed Data</h2>
+  <p><code>prisma/seed.js</code> creates the following records if they don't already exist:</p>
+  <table>
+    <thead><tr><th>Role</th><th>Email</th><th>Password</th><th>Membership #</th></tr></thead>
+    <tbody>
+      <tr><td>LIBRARIAN</td><td><code>librarian@library.test</code></td><td><code>LibPass123!</code></td><td>—</td></tr>
+      <tr><td>MEMBER</td><td><code>member@library.test</code></td><td><code>MemPass123!</code></td><td><code>MBR-0001</code></td></tr>
+    </tbody>
+  </table>
+  <p>Passwords are bcrypt-hashed before insert.</p>
+
+  <!-- Section 8: Validation Rules -->
+  <h2>8. Validation Rules (Server-side)</h2>
+  <p>All validation is performed in route handlers before database calls. Use a lightweight schema validator (e.g., <code>zod</code> or manual checks — Dev decides).</p>
+  <table>
+    <thead><tr><th>Field</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td><code>isbn</code></td><td>Exactly 10 or 13 digits (strip hyphens before check)</td></tr>
+      <tr><td><code>quantity</code></td><td>Integer, 1–999</td></tr>
+      <tr><td><code>email</code></td><td>Basic RFC 5322 regex</td></tr>
+      <tr><td><code>password</code></td><td>Min 8 characters</td></tr>
+      <tr><td><code>membershipNumber</code></td><td>Alphanumeric + hyphens, 3–20 chars</td></tr>
+      <tr><td>All string fields</td><td>Non-empty, max 255 chars</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Section 9: Error Handling -->
+  <h2>9. Error Handling</h2>
+  <ul>
+    <li>All unhandled errors go through a central Express error handler that returns <code>{ "error": "message" }</code> JSON or renders an error page.</li>
+    <li><code>404</code> — unknown route → <code>404.njk</code> / JSON <code>{ "error": "Not found" }</code>.</li>
+    <li><code>500</code> — unexpected server error → generic message (never expose stack traces in production).</li>
+  </ul>
+
+  <!-- Section 10: Environment Configuration -->
+  <h2>10. Environment Configuration</h2>
+  <p><code>.env.example</code>:</p>
+  <pre><code>DATABASE_URL="file:./library.db"
+SESSION_SECRET="change-me-in-production"
+PORT=3000
+NODE_ENV=development</code></pre>
+  <p>Production overrides:</p>
+  <pre><code>DATABASE_URL="postgresql://user:pass@host:5432/library"
+NODE_ENV=production</code></pre>
+
+  <!-- Section 11: Non-Functional Requirements -->
+  <h2>11. Non-Functional Requirements</h2>
+  <table>
+    <thead><tr><th>Concern</th><th>Approach</th></tr></thead>
+    <tbody>
+      <tr><td>Concurrency</td><td>SQLite is single-writer; sufficient for dev. Postgres handles concurrent writes in prod.</td></tr>
+      <tr><td>Responsive UI</td><td>Pico.css provides mobile-first responsive layout by default.</td></tr>
+      <tr><td>Security</td><td>Parameterised queries via Prisma (no SQL injection), bcrypt passwords, httpOnly cookies, CSRF via <code>csurf</code> middleware (POST forms include hidden <code>_csrf</code> token).</td></tr>
+      <tr><td>Pagination</td><td>Book and member lists paginated at 20 items per page via <code>?page=N</code> query param.</td></tr>
+      <tr><td>Logging</td><td><code>morgan</code> request logger in <code>dev</code> format to stdout.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Section 12: Test Plan -->
+  <h2>12. Test Plan</h2>
+  <table>
+    <thead><tr><th>Test</th><th>Tool</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr><td>Auth flows (login, logout, role enforcement)</td><td>Vitest + supertest</td><td>Integration</td></tr>
+      <tr><td>Book CRUD + validation + duplicate ISBN</td><td>Vitest + supertest</td><td>Integration</td></tr>
+      <tr><td>Member registration + conflict detection</td><td>Vitest + supertest</td><td>Integration</td></tr>
+      <tr><td>Borrow + return + overdue query</td><td>Vitest + supertest</td><td>Integration</td></tr>
+      <tr><td>Catalogue search (partial match, no results)</td><td>Vitest + supertest</td><td>Integration</td></tr>
+      <tr><td>Available copies derived correctly</td><td>Vitest</td><td>Unit (pure function)</td></tr>
+    </tbody>
+  </table>
+  <p>All tests run against a seeded in-memory SQLite instance (<code>:memory:</code> DATABASE_URL).</p>
+
+  <!-- Section 13: Implementation Order -->
+  <h2>13. Implementation Order (Suggested)</h2>
+  <ol>
+    <li>Prisma schema + migrations + seed script</li>
+    <li>Express app scaffold (session, middleware, error handler)</li>
+    <li>Auth routes (login/logout)</li>
+    <li>Books CRUD</li>
+    <li>Members registration</li>
+    <li>Loans (borrow/return/overdue)</li>
+    <li>Catalogue search</li>
+    <li>Member dashboard</li>
+    <li>Nunjucks templates for each route</li>
+    <li>Tests</li>
+    <li>README with setup, seed, and run instructions</li>
+  </ol>
+
+  <!-- Section 14: Out of Scope -->
+  <h2>14. Out of Scope (Carried from Spec)</h2>
+  <ul>
+    <li>Payments, fines, email/SMS notifications</li>
+    <li>Book reservations / waitlists</li>
+    <li>Multi-branch support</li>
+    <li>Native mobile app</li>
+    <li>OAuth / SSO</li>
+    <li>Book cover image uploads</li>
+  </ul>
+
+  <div class="doc-footer">
+    Architecture produced by Architect Agent — 2026-03-12 &nbsp;|&nbsp; Software Factory Pipeline
+  </div>
+
+</div>
+</body>
+</html>
