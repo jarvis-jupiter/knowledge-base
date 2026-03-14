@@ -176,6 +176,32 @@
     margin: 16px 0;
   }
 
+  /* ─── Callout boxes ─── */
+  .callout {
+    border-left: 4px solid #f59e0b;
+    background: #1a1a0f;
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 14px 0;
+  }
+
+  .callout-blue {
+    border-left-color: #3b82f6;
+    background: #0f1a2d;
+  }
+
+  .callout-red {
+    border-left-color: #ef4444;
+    background: #1a0f0f;
+  }
+
+  .callout-green {
+    border-left-color: #22c55e;
+    background: #0f1a10;
+  }
+
+  .callout p { margin: 4px 0; }
+
   /* ─── Decision badges ─── */
   .badge {
     display: inline-block;
@@ -190,6 +216,7 @@
   .badge-amber { background: #78350f; color: #fbbf24; }
   .badge-blue  { background: #1e3a5f; color: #60a5fa; }
   .badge-green { background: #14532d; color: #4ade80; }
+  .badge-red   { background: #450a0a; color: #f87171; }
 
   /* ─── AC mapping table — highlight rows ─── */
   .ac-row td:first-child { color: #fbbf24; font-family: monospace; }
@@ -199,6 +226,8 @@
   /* ─── Lists ─── */
   ul, ol { padding-left: 22px; margin: 10px 0; }
   li { margin: 4px 0; color: #cbd5e0; }
+
+  li strong { color: #e2e8f0; }
 
   hr { border: none; border-top: 1px solid #2d3748; margin: 32px 0; }
 
@@ -216,6 +245,44 @@
     white-space: pre;
   }
 
+  /* ─── E2E test scenario cards ─── */
+  .test-card {
+    background: #0f1a2d;
+    border: 1px solid #1e3a5f;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+
+  .test-card h4 {
+    color: #60a5fa;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    margin: 0 0 10px;
+  }
+
+  .test-card .test-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 6px;
+    margin: 4px 0;
+    font-size: 13px;
+  }
+
+  .test-card .test-label {
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-top: 2px;
+  }
+
+  .test-card .test-value { color: #cbd5e0; }
+
+  .test-card ol { margin: 4px 0; }
+  .test-card li { color: #cbd5e0; font-size: 13px; }
+
   /* ─── Footer ─── */
   .footer {
     margin-top: 60px;
@@ -230,29 +297,40 @@
 <body>
 
 <div class="banner">
-  <span class="icon">⏳</span>
-  AWAITING APPROVAL — This architecture document is pending review by Sir before implementation begins
+  <span class="icon">⏳</span> AWAITING APPROVAL — This architecture document has not yet been approved for implementation. Do not begin development until Sir approves.
 </div>
 
 <div class="container">
 
+  <!-- ─── Header ─── -->
   <div class="doc-header">
-    <h1>TICKET-002 Architecture</h1>
-    <h1 style="font-size:18px; color:#e2e8f0; font-weight:400; margin-top:4px;">Book Discovery &amp; Bookmarking App</h1>
+    <h1>TICKET-002 Architecture: Book Discovery &amp; Bookmarking App</h1>
     <div class="meta-grid">
-      <div class="meta-item"><strong>Status:</strong> <span class="badge badge-amber">Awaiting Approval</span></div>
+      <div class="meta-item"><strong>Status:</strong> Awaiting Approval</div>
+      <div class="meta-item"><strong>Revision:</strong> 2 — Remix · FP · TDD · Playwright E2E</div>
       <div class="meta-item"><strong>Prepared by:</strong> Architect Agent</div>
-      <div class="meta-item"><strong>Date:</strong> 2026-03-12</div>
+      <div class="meta-item"><strong>Date:</strong> 2026-03-14</div>
       <div class="meta-item"><strong>Spec:</strong> <code>~/factory/specs/TICKET-002.md</code></div>
     </div>
   </div>
 
-  <!-- ─────────────────────────────────────────────── -->
+  <!-- ─── 1. Overview ─── -->
   <h2>1. Overview</h2>
-  <p>This document defines the full technical architecture for the Book Discovery &amp; Bookmarking application. Authenticated users can search for books via the Google Books API and save books to a personal bookmark list.</p>
-  <p>Covers: technology stack, system topology, data model, REST API contract, Google Books integration, authentication approach, folder structure, and a full acceptance-criteria → design-component mapping.</p>
+  <p>This document defines the full technical architecture for the Book Discovery &amp; Bookmarking application. It covers:</p>
+  <ul>
+    <li>Technology stack selection with rationale</li>
+    <li>System topology and component interactions</li>
+    <li>Data model (users, bookmarks)</li>
+    <li>REST API contract (Express backend) and Remix loader/action integration</li>
+    <li>Google Books API integration pattern</li>
+    <li>Authentication approach</li>
+    <li>Folder structure</li>
+    <li>Development Standards (docs-first, TDD, functional programming)</li>
+    <li>E2E Test Suite (Playwright)</li>
+    <li>Mapping of every acceptance criterion to a design component</li>
+  </ul>
 
-  <!-- ─────────────────────────────────────────────── -->
+  <!-- ─── 2. Tech Stack ─── -->
   <h2>2. Tech Stack</h2>
 
   <h3>2.1 Frontend</h3>
@@ -260,16 +338,24 @@
     <table>
       <thead><tr><th>Concern</th><th>Choice</th><th>Rationale</th></tr></thead>
       <tbody>
-        <tr><td>Language</td><td><span class="badge badge-blue">TypeScript</span></td><td>Type safety reduces runtime bugs; IDE autocomplete accelerates development</td></tr>
-        <tr><td>Framework</td><td><span class="badge badge-blue">React 18</span></td><td>Industry-standard, component-based, large ecosystem, excellent for SPA</td></tr>
-        <tr><td>Build tool</td><td>Vite</td><td>Near-instant HMR and cold start; modern ES-module first</td></tr>
-        <tr><td>Routing</td><td>React Router v6</td><td>Declarative route protection; nested layouts</td></tr>
-        <tr><td>Data fetching / caching</td><td><span class="badge badge-blue">TanStack Query</span></td><td>Automatic caching, deduplication, background refetch; ideal for Google Books calls</td></tr>
+        <tr><td>Language</td><td>TypeScript</td><td>Type safety reduces runtime bugs; IDE autocomplete accelerates development</td></tr>
+        <tr><td>Framework</td><td><strong style="color:#f6ad55">Remix (latest stable)</strong></td><td>Full-stack React framework with SSR, file-based routing, and native data loading via loaders/actions — eliminates the need for a separate client-side data-fetching layer</td></tr>
         <tr><td>Styling</td><td>Tailwind CSS v3</td><td>Utility-first; responsive design out of the box; no CSS-in-JS overhead</td></tr>
-        <tr><td>HTTP client</td><td>Axios</td><td>Interceptors for auth headers; consistent error shape</td></tr>
-        <tr><td>Form handling</td><td>React Hook Form + Zod</td><td>Minimal re-renders; schema-driven validation (password length, email format)</td></tr>
+        <tr><td>Form handling</td><td>Remix <code>&lt;Form&gt;</code> + Zod</td><td>Remix's built-in form actions handle submissions server-side; Zod validates inputs in actions</td></tr>
+        <tr><td>Session management</td><td>Remix <code>createCookieSessionStorage</code></td><td>Server-side session stores JWT received from Express backend; never exposed to client JS</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="callout callout-red">
+    <p><strong>Removed from Revision 1 (made redundant by Remix):</strong></p>
+    <ul>
+      <li><del>Vite</del> — Remix ships its own build toolchain (Vite-based internally; no custom config required)</li>
+      <li><del>React Router v6</del> — Remix IS React Router; file-based routing is built in</li>
+      <li><del>TanStack Query</del> — Remix loaders/actions replace client-side data fetching, caching, and synchronisation</li>
+      <li><del>Axios</del> — Remix loaders run server-side; native <code>fetch</code> is sufficient</li>
+      <li><del>React Hook Form</del> — Remix <code>&lt;Form&gt;</code> + server actions replace client-side form state management</li>
+    </ul>
   </div>
 
   <h3>2.2 Backend</h3>
@@ -277,15 +363,14 @@
     <table>
       <thead><tr><th>Concern</th><th>Choice</th><th>Rationale</th></tr></thead>
       <tbody>
-        <tr><td>Runtime</td><td><span class="badge badge-blue">Node.js 20 LTS</span></td><td>Same language as frontend; non-blocking I/O suits proxy workloads</td></tr>
-        <tr><td>Framework</td><td><span class="badge badge-blue">Express 5</span></td><td>Minimal, well-understood, large middleware ecosystem</td></tr>
+        <tr><td>Runtime</td><td>Node.js 20 LTS</td><td>Same language as frontend; large ecosystem; non-blocking I/O suits API proxy workloads</td></tr>
+        <tr><td>Framework</td><td>Express 5</td><td>Minimal, well-understood, large middleware ecosystem</td></tr>
         <tr><td>Language</td><td>TypeScript</td><td>Shared type definitions with frontend via a <code>shared/</code> package</td></tr>
-        <tr><td>ORM</td><td><span class="badge badge-blue">Prisma</span></td><td>Type-safe DB queries; schema-as-source-of-truth; easy migrations</td></tr>
-        <tr><td>Password hashing</td><td>bcryptjs</td><td>Industry standard; configurable work factor</td></tr>
-        <tr><td>Auth tokens</td><td>JWT (jsonwebtoken)</td><td>Stateless; sent as httpOnly cookie to prevent XSS</td></tr>
-        <tr><td>Cookie security</td><td>httpOnly + SameSite=Strict + Secure</td><td>Prevents XSS token theft and CSRF</td></tr>
-        <tr><td>Validation</td><td>Zod</td><td>Same schemas reused between client and server via shared package</td></tr>
-        <tr><td>API key mgmt</td><td>dotenv</td><td><code>GOOGLE_BOOKS_API_KEY</code> loaded from <code>.env</code>; never exposed to frontend</td></tr>
+        <tr><td>ORM</td><td>Prisma</td><td>Type-safe DB queries; schema-as-source-of-truth; easy migrations</td></tr>
+        <tr><td>Password hashing</td><td>bcrypt (bcryptjs)</td><td>Industry standard; configurable work factor</td></tr>
+        <tr><td>Auth tokens</td><td>JWT (jsonwebtoken)</td><td>Stateless; returned in response body and stored in Remix session (not a browser-accessible cookie)</td></tr>
+        <tr><td>Validation</td><td>Zod</td><td>Schemas reused between client and server via shared package</td></tr>
+        <tr><td>API key management</td><td>dotenv</td><td><code>GOOGLE_BOOKS_API_KEY</code> loaded from <code>.env</code>; never exposed to frontend</td></tr>
       </tbody>
     </table>
   </div>
@@ -295,57 +380,72 @@
     <table>
       <thead><tr><th>Concern</th><th>Choice</th><th>Rationale</th></tr></thead>
       <tbody>
-        <tr><td>Engine</td><td><span class="badge badge-blue">PostgreSQL 16</span></td><td>Robust relational DB; JSONB column support for authors array; excellent Prisma support</td></tr>
+        <tr><td>Engine</td><td>PostgreSQL 16</td><td>Robust relational DB; JSON column support for authors array; excellent Prisma support</td></tr>
         <tr><td>Hosting (dev)</td><td>Docker Compose</td><td>Single <code>docker-compose.yml</code> spins up Postgres locally</td></tr>
         <tr><td>Migrations</td><td>Prisma Migrate</td><td>Version-controlled, reproducible schema</td></tr>
       </tbody>
     </table>
   </div>
 
-  <h3>2.4 Production Infrastructure (Target)</h3>
+  <h3>2.4 Infrastructure (Production Target)</h3>
   <ul>
-    <li><strong>Frontend:</strong> Static site on <strong>Vercel</strong> (zero-config Vite support)</li>
-    <li><strong>Backend:</strong> <strong>Railway</strong> or <strong>Render</strong> Node.js service (free tier sufficient for MVP)</li>
+    <li><strong>Frontend (Remix):</strong> Fly.io or Railway Node.js service — Remix requires a Node server; not a static host</li>
+    <li><strong>Backend (Express):</strong> Railway or Render Node.js service</li>
     <li><strong>Database:</strong> Railway PostgreSQL add-on or Supabase managed Postgres</li>
   </ul>
 
-  <!-- ─────────────────────────────────────────────── -->
+  <!-- ─── 3. System Topology ─── -->
   <h2>3. System Topology</h2>
-
-  <div class="topology">┌─────────────────────────────────────────────────────────────────┐
-│  Browser (React SPA)                                            │
-│                                                                 │
-│  ┌──────────┐  ┌──────────────┐  ┌──────────────────────────┐  │
-│  │ Auth     │  │ Search Page  │  │ Bookmarks Page / Detail  │  │
-│  │ Pages    │  │ (TanStack Q) │  │ (TanStack Q)             │  │
-│  └────┬─────┘  └──────┬───────┘  └────────────┬─────────────┘  │
-└───────┼───────────────┼──────────────────────┼────────────────┘
-        │ JWT cookie     │ REST/JSON             │ REST/JSON
-        ▼               ▼                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  Express API Server (Node.js / TypeScript)                      │
-│                                                                 │
-│  ┌──────────────┐ ┌──────────────┐ ┌───────────────────────┐   │
-│  │ /api/auth    │ │ /api/books   │ │ /api/bookmarks        │   │
-│  │ register     │ │ search proxy │ │ list / add / remove   │   │
-│  │ login/logout │ │ detail proxy │ │                       │   │
-│  └──────┬───────┘ └──────┬───────┘ └──────────┬────────────┘   │
-│         │                │                    │                │
-│  ┌──────▼───────┐  ┌─────▼──────┐    ┌───────▼──────────────┐  │
-│  │ Prisma ORM   │  │ Google     │    │ Prisma ORM           │  │
-│  │ (Users)      │  │ Books API  │    │ (Bookmarks)          │  │
-│  └──────┬───────┘  └────────────┘    └───────┬──────────────┘  │
-└─────────┼─────────────────────────────────────┼────────────────┘
+  <div class="topology">┌────────────────────────────────────────────────────────────────────┐
+│  Browser (Remix SSR — HTML rendered server-side)                   │
+│                                                                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐   │
+│  │ /register    │  │ /search      │  │ /bookmarks  /books/:id │   │
+│  │ /login       │  │ (loader →    │  │ (loader → Express API) │   │
+│  │ (action →    │  │  Express)    │  │ (action → Express API) │   │
+│  │  Express)    │  │              │  │                        │   │
+│  └──────┬───────┘  └──────┬───────┘  └───────────┬────────────┘   │
+└─────────┼────────────────┼──────────────────────┼────────────────┘
+          │ server-to-server (HTTP, JWT Bearer)    │
+          ▼                ▼                       ▼
+┌────────────────────────────────────────────────────────────────────┐
+│  Express API Server (Node.js / TypeScript)                         │
+│                                                                    │
+│  ┌──────────────┐ ┌──────────────┐ ┌───────────────────────────┐  │
+│  │ /api/auth    │ │ /api/books   │ │ /api/bookmarks            │  │
+│  │ register     │ │ search proxy │ │ list / add / remove       │  │
+│  │ login        │ │ detail proxy │ │                           │  │
+│  │ logout       │ └──────┬───────┘ └──────────┬────────────────┘  │
+│  └──────┬───────┘        │                    │                   │
+│         │                │                    │                   │
+│  ┌──────▼───────┐  ┌─────▼──────┐   ┌────────▼──────────────────┐ │
+│  │ Prisma ORM   │  │ Google     │   │ Prisma ORM (Bookmarks)    │ │
+│  │ (Users)      │  │ Books API  │   │                           │ │
+│  └──────┬───────┘  └────────────┘   └────────┬──────────────────┘ │
+└─────────┼──────────────────────────────────── ┼───────────────────┘
           │                                     │
           ▼                                     ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  PostgreSQL 16 — Tables: users, bookmarks                       │
-└─────────────────────────────────────────────────────────────────┘</div>
+┌────────────────────────────────────────────────────────────────────┐
+│  PostgreSQL 16                                                     │
+│  Tables: users, bookmarks                                          │
+└────────────────────────────────────────────────────────────────────┘</div>
 
-  <!-- ─────────────────────────────────────────────── -->
+  <div class="callout callout-blue">
+    <p><strong>Key topology note:</strong> The Remix app is a Node.js server. Loaders and actions run on the Remix server and call the Express API via HTTP using a stored JWT bearer token (retrieved from the Remix session). The browser never makes direct API calls — all data flows through Remix loaders/actions.</p>
+  </div>
+
+  <!-- ─── 4. Data Model ─── -->
   <h2>4. Data Model</h2>
 
   <h3>4.1 <code>users</code> Table</h3>
+  <pre>CREATE TABLE users (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email        TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);</pre>
+
+  <p><strong>Prisma Schema:</strong></p>
   <pre>model User {
   id           String     @id @default(uuid())
   email        String     @unique
@@ -355,73 +455,102 @@
 }</pre>
 
   <h3>4.2 <code>bookmarks</code> Table</h3>
-  <p>Stores a snapshot of Google Books metadata at bookmark time. This allows the bookmark list to render <strong>without a live API call</strong> on every page load — tolerant of future Google Books changes.</p>
+  <p>Bookmark storage stores the Google Books volume ID plus the essential display metadata (title, authors, thumbnail). This allows the bookmark list to render without a live API call on every page load — a key spec decision from TICKET-002 Rationale.</p>
+
+  <pre>CREATE TABLE bookmarks (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  google_volume_id TEXT NOT NULL,
+  title            TEXT NOT NULL,
+  authors          JSONB NOT NULL DEFAULT '[]',   -- string[]
+  thumbnail_url    TEXT,
+  description      TEXT,
+  bookmarked_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, google_volume_id)              -- idempotency constraint
+);</pre>
+
+  <p><strong>Prisma Schema:</strong></p>
   <pre>model Bookmark {
   id             String   @id @default(uuid())
   userId         String
   googleVolumeId String
   title          String
-  authors        Json     @default("[]")   // string[]
+  authors        Json     @default("[]")
   thumbnailUrl   String?
   description    String?
   bookmarkedAt   DateTime @default(now())
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, googleVolumeId])   // DB-level idempotency guarantee
+  @@unique([userId, googleVolumeId])
 }</pre>
 
-  <p><strong>Key decisions:</strong></p>
+  <p><strong>Key design decisions:</strong></p>
   <ul>
-    <li><code>@@unique([userId, googleVolumeId])</code> enforces idempotency at the DB level — no duplicate bookmarks even under concurrent requests (AC 4b)</li>
-    <li><code>authors</code> stored as JSONB array — avoids a junction table for MVP</li>
-    <li><code>thumbnailUrl</code> and <code>description</code> nullable — Google Books may not provide them (AC 7b)</li>
+    <li><code>UNIQUE(user_id, google_volume_id)</code> enforces idempotency at the DB level (AC 4: no duplicate bookmarks).</li>
+    <li><code>authors</code> stored as JSONB array — avoids a junction table for MVP; sufficient for display.</li>
+    <li><code>thumbnail_url</code> and <code>description</code> nullable — Google Books may not provide them (AC 7: graceful omission).</li>
   </ul>
 
-  <!-- ─────────────────────────────────────────────── -->
+  <!-- ─── 5. API Contract ─── -->
   <h2>5. API Contract</h2>
-  <p>Base URL: <code>/api</code> &nbsp;|&nbsp; Content-Type: <code>application/json</code> &nbsp;|&nbsp; Auth: httpOnly JWT cookie (<code>token</code>)</p>
+  <p><strong>Base URL:</strong> <code>/api</code> &nbsp;|&nbsp; <strong>Content-Type:</strong> <code>application/json</code></p>
+  <p><strong>Auth:</strong> <code>Authorization: Bearer &lt;jwt&gt;</code> header. Remix loaders/actions attach this header using the JWT stored in the Remix session cookie (server-side only — never exposed to the browser).</p>
 
   <h3>5.1 Auth Endpoints</h3>
 
   <h4>POST /api/auth/register</h4>
-  <div class="section-card">
-    <p><strong>Request:</strong> <code>{ "email": "user@example.com", "password": "mypassword" }</code></p>
-    <p><strong>201 Created</strong> — sets <code>token</code> cookie, returns <code>{ "user": { "id": "...", "email": "..." } }</code></p>
-    <p><strong>400 Bad Request</strong> — <code>{ "error": "Password must be at least 8 characters" }</code></p>
-    <p><strong>409 Conflict</strong> — <code>{ "error": "Email already in use" }</code></p>
-    <p><span class="badge badge-green">Maps to AC 1</span></p>
+  <pre>{
+  "email": "user@example.com",
+  "password": "mypassword"
+}</pre>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Status</th><th>Response</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-green">201 Created</span></td><td>Returns <code>{ "token": "&lt;jwt&gt;", "user": { "id": "...", "email": "..." } }</code></td></tr>
+        <tr><td><span class="badge badge-amber">400 Bad Request</span></td><td><code>{ "error": "Password must be at least 8 characters" }</code></td></tr>
+        <tr><td><span class="badge badge-red">409 Conflict</span></td><td><code>{ "error": "Email already in use" }</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout callout-blue">
+    <p><strong>Remix integration:</strong> The <code>/register</code> route action calls this endpoint, extracts the <code>token</code>, stores it in the Remix session via <code>createCookieSessionStorage</code>, then redirects to <code>/search</code>.</p>
   </div>
 
   <h4>POST /api/auth/login</h4>
-  <div class="section-card">
-    <p><strong>Request:</strong> <code>{ "email": "user@example.com", "password": "mypassword" }</code></p>
-    <p><strong>200 OK</strong> — sets <code>token</code> cookie, returns <code>{ "user": { "id": "...", "email": "..." } }</code></p>
-    <p><strong>401 Unauthorized</strong> — <code>{ "error": "Invalid email or password" }</code> (intentionally ambiguous per AC 2b)</p>
-    <p><span class="badge badge-green">Maps to AC 2</span></p>
+  <pre>{
+  "email": "user@example.com",
+  "password": "mypassword"
+}</pre>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Status</th><th>Response</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-green">200 OK</span></td><td>Returns <code>{ "token": "&lt;jwt&gt;", "user": { "id": "...", "email": "..." } }</code></td></tr>
+        <tr><td><span class="badge badge-red">401 Unauthorized</span></td><td><code>{ "error": "Invalid email or password" }</code> (intentionally ambiguous — AC 2)</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <h4>POST /api/auth/logout</h4>
-  <div class="section-card">
-    <p>No request body. Clears <code>token</code> cookie.</p>
-    <p><strong>200 OK</strong> — <code>{ "message": "Logged out" }</code></p>
-    <p><span class="badge badge-green">Maps to AC 8</span></p>
+  <p>No request body required.</p>
+  <div class="callout callout-blue">
+    <p><strong>Remix integration:</strong> The <code>/logout</code> route action destroys the Remix session (removes the stored JWT) and redirects to <code>/login</code>. No backend call is strictly required; session destruction is sufficient.</p>
   </div>
 
   <h3>5.2 Book Endpoints (Google Books Proxy)</h3>
-  <p>The backend proxies all Google Books calls to keep the API key server-side and centralise error handling.</p>
+  <p>The Express backend proxies all Google Books calls to keep the API key server-side. Remix loaders call these endpoints server-to-server.</p>
 
   <h4>GET /api/books/search?q=&lt;query&gt;</h4>
-  <div class="section-card">
-    <p>Proxies: <code>https://www.googleapis.com/books/v1/volumes?q=&lt;query&gt;&amp;maxResults=20&amp;key=API_KEY</code></p>
-    <p><strong>Auth required.</strong></p>
-    <pre>{
+  <p><strong>Auth required:</strong> Yes (Bearer token)</p>
+  <pre>{
   "results": [
     {
       "volumeId": "abc123",
       "title": "Clean Code",
       "authors": ["Robert C. Martin"],
       "description": "A handbook of agile software craftsmanship...",
-      "thumbnailUrl": "https://books.google.com/...",
+      "thumbnailUrl": "https://books.google.com/books/content?id=abc123&...",
       "publisher": "Prentice Hall",
       "publishedDate": "2008-08-01",
       "pageCount": 431,
@@ -430,237 +559,649 @@
   ],
   "totalItems": 42
 }</pre>
-    <p><strong>400</strong> — missing <code>q</code> &nbsp;|&nbsp; <strong>401</strong> — not authenticated &nbsp;|&nbsp; <strong>502</strong> — Google Books unavailable → <code>{ "error": "Book search temporarily unavailable" }</code></p>
-    <p><span class="badge badge-green">Maps to AC 3</span></p>
+  <div class="callout callout-blue">
+    <p><strong>Remix integration:</strong> The <code>/search</code> route loader reads <code>q</code> from <code>request.url</code>, attaches the Bearer token from session, calls this endpoint, and returns normalised results via <code>useLoaderData()</code>.</p>
   </div>
 
   <h4>GET /api/books/:volumeId</h4>
-  <div class="section-card">
-    <p>Proxies: <code>https://www.googleapis.com/books/v1/volumes/:volumeId?key=API_KEY</code></p>
-    <p><strong>Auth required.</strong> Returns same shape as above but with full description.</p>
-    <p><strong>404</strong> — volume not found &nbsp;|&nbsp; <strong>502</strong> — API error</p>
-    <p><span class="badge badge-green">Maps to AC 7</span></p>
-  </div>
+  <p><strong>Auth required:</strong> Yes. Returns same shape as a single search result with full description (no truncation).</p>
 
   <h3>5.3 Bookmark Endpoints</h3>
 
   <h4>GET /api/bookmarks</h4>
-  <div class="section-card">
-    <p><strong>Auth required.</strong> Returns all bookmarks for the authenticated user.</p>
-    <p><span class="badge badge-green">Maps to AC 5</span></p>
-  </div>
+  <p><strong>Auth required:</strong> Yes</p>
+  <pre>{
+  "bookmarks": [
+    {
+      "id": "uuid",
+      "googleVolumeId": "abc123",
+      "title": "Clean Code",
+      "authors": ["Robert C. Martin"],
+      "thumbnailUrl": "https://...",
+      "bookmarkedAt": "2026-03-12T10:00:00Z"
+    }
+  ]
+}</pre>
 
   <h4>POST /api/bookmarks</h4>
-  <div class="section-card">
-    <p><strong>Auth required.</strong></p>
-    <pre>{
+  <p><strong>Auth required:</strong> Yes. Idempotent — returns <code>200</code> if already bookmarked, <code>201</code> if newly created.</p>
+  <pre>{
   "googleVolumeId": "abc123",
   "title": "Clean Code",
   "authors": ["Robert C. Martin"],
   "thumbnailUrl": "https://...",
-  "description": "..."
+  "description": "A handbook of agile software craftsmanship..."
 }</pre>
-    <p><strong>201 Created</strong> — new bookmark &nbsp;|&nbsp; <strong>200 OK</strong> — already bookmarked (idempotent)</p>
-    <p><span class="badge badge-green">Maps to AC 4</span></p>
+  <div class="callout callout-blue">
+    <p><strong>Remix integration:</strong> A Remix <code>&lt;Form method="post"&gt;</code> on the search results page triggers the route action, which calls this endpoint then re-validates via loader revalidation.</p>
   </div>
 
   <h4>DELETE /api/bookmarks/:volumeId</h4>
-  <div class="section-card">
-    <p><strong>Auth required.</strong> Deletes bookmark for the authenticated user by <code>googleVolumeId</code>.</p>
-    <p><strong>204 No Content</strong> — deleted &nbsp;|&nbsp; <strong>404</strong> — not found</p>
-    <p><span class="badge badge-green">Maps to AC 6</span></p>
+  <p><strong>Auth required:</strong> Yes. Returns <code>204 No Content</code> on success, <code>404</code> if not found for this user.</p>
+  <div class="callout callout-blue">
+    <p><strong>Remix integration:</strong> A Remix <code>&lt;Form method="post"&gt;</code> with a hidden <code>_method=DELETE</code> field (or a dedicated <code>/bookmarks/:volumeId/remove</code> action route) handles deletion, then redirects back to <code>/bookmarks</code>.</p>
   </div>
 
-  <!-- ─────────────────────────────────────────────── -->
+  <!-- ─── 6. Authentication ─── -->
   <h2>6. Authentication Design</h2>
 
-  <div class="topology">Register / Login
+  <h3>6.1 Flow</h3>
+  <div class="topology">Register / Login (browser submits Remix &lt;Form&gt;)
       │
       ▼
-Backend validates credentials (Zod + bcrypt.compare)
+Remix action runs server-side
       │
       ▼
-Generate JWT  { userId, email }  exp: 7 days
+Remix action calls POST /api/auth/register or /login (Express)
       │
       ▼
-Set-Cookie: token=&lt;jwt&gt;; HttpOnly; SameSite=Strict; Secure; Path=/; Max-Age=604800
+Express validates credentials → returns { token, user }
       │
       ▼
-Browser stores cookie automatically (no JS access — XSS-safe)
+Remix action stores token in Remix session:
+  session.set("token", token)
+  session.set("userId", user.id)
+  Set-Cookie: __session=&lt;signed-session&gt;; HttpOnly; SameSite=Lax; Secure; Path=/
       │
       ▼
-All subsequent requests to /api/* include cookie automatically
+Browser stores signed session cookie automatically (no JS access — XSS safe)
       │
       ▼
-verifyToken middleware:
-  1. Extract token from req.cookies.token
-  2. Verify JWT signature (process.env.JWT_SECRET)
-  3. Attach decoded { userId } to req.user
-  4. Call next() or return 401</div>
+Subsequent Remix loaders/actions:
+  1. Read session from cookie: await getSession(request.headers.get("Cookie"))
+  2. Extract token: session.get("token")
+  3. Attach to backend call: Authorization: Bearer &lt;token&gt;
+  4. If no token → redirect to /login</div>
 
-  <p style="margin-top:14px;"><strong>Route protection:</strong></p>
-  <ul>
-    <li><strong>Backend:</strong> <code>verifyToken</code> middleware on all <code>/api/books/*</code> and <code>/api/bookmarks/*</code> routes.</li>
-    <li><strong>Frontend:</strong> <code>&lt;RequireAuth&gt;</code> HOC wraps protected routes — redirects to <code>/login</code> if unauthenticated.</li>
-    <li><strong>AC 9:</strong> Covered by both backend middleware (API level) and frontend route guard (UX level). Users can only query their own bookmarks — all queries are filtered by <code>userId</code> from JWT.</li>
-  </ul>
+  <h3>6.2 Route Protection</h3>
+  <p><strong>Backend:</strong> <code>verifyToken</code> middleware applied to all <code>/api/books/*</code> and <code>/api/bookmarks/*</code> routes. Validates Bearer token from Authorization header.</p>
+  <p><strong>Frontend (Remix):</strong> Each protected loader checks the session for a valid token via a <code>requireUserSession(request)</code> helper. If absent, it throws <code>redirect("/login")</code>. This provides both UX-level and server-level protection in one place — no separate route guard component needed.</p>
+  <p><strong>AC 9 (Access control):</strong> Covered by backend middleware (API-level) and Remix loader guards (render-level). Unauthenticated requests are redirected before any data is fetched.</p>
 
-  <!-- ─────────────────────────────────────────────── -->
+  <!-- ─── 7. Google Books Integration ─── -->
   <h2>7. Google Books API Integration Pattern</h2>
 
-  <div class="topology">Frontend (search page)
-      │ GET /api/books/search?q=&lt;query&gt;
-      ▼
-BookService.search(query) on backend:
-  1. Encode query: encodeURIComponent(query)
-  2. Fetch: GET https://www.googleapis.com/books/v1/volumes
-            ?q=&lt;encoded&gt;&amp;maxResults=20&amp;key=${GOOGLE_BOOKS_API_KEY}
-  3. On success  → normalize response to internal BookResult shape
-  4. On network/5xx error → throw GoogleBooksApiError → return 502
-  5. On empty items → return { results: [], totalItems: 0 }
+  <div class="topology">Browser navigates to /search?q=clean+code
       │
       ▼
-BookService.normalize(item):
-  - volumeInfo.imageLinks.thumbnail  → thumbnailUrl (null if absent)
-  - volumeInfo.authors               → authors ([] if absent)
-  - volumeInfo.description           → truncate to 200 chars for search results
-  - Full description returned on /api/books/:volumeId
-  - Any missing field                → null / omitted (no "undefined" labels)
+Remix loader (search.tsx) — runs server-side:
+  1. requireUserSession(request) → get token
+  2. Extract q from new URL(request.url).searchParams
+  3. Call GET /api/books/search?q=&lt;query&gt; with Bearer token
       │
       ▼
-Normalized BookResult[] → JSON response to frontend</div>
+Express BookService.search(query):
+  1. encodeURIComponent(query)
+  2. GET https://www.googleapis.com/books/v1/volumes?q=&lt;encoded&gt;&amp;maxResults=20&amp;key=${KEY}
+  3. On success: normalize → BookResult[]
+  4. On error: throw GoogleBooksApiError → 502
+  5. On empty: return { results: [], totalItems: 0 }
+      │
+      ▼
+Remix loader returns normalised data → component renders via useLoaderData()
+No client-side fetch; no loading spinners from data layer</div>
 
-  <p style="margin-top:14px;"><strong>API Key:</strong> Stored in <code>GOOGLE_BOOKS_API_KEY</code> env variable. Backend logs a warning on startup if absent (falls back to keyless — 1000 req/day limit).</p>
+  <p><strong>Transformation layer (<code>bookService.normalize</code>):</strong></p>
+  <ul>
+    <li>Maps <code>volumeInfo.imageLinks.thumbnail</code> → <code>thumbnailUrl</code> (null if absent)</li>
+    <li>Maps <code>volumeInfo.authors</code> → <code>authors</code> (empty array if absent)</li>
+    <li>Truncates description to 200 chars for search results (AC 3b)</li>
+    <li>Full description returned on detail endpoint</li>
+    <li>Any missing field → <code>null</code> / omitted gracefully (AC 7b)</li>
+  </ul>
 
-  <!-- ─────────────────────────────────────────────── -->
+  <!-- ─── 8. Folder Structure ─── -->
   <h2>8. Folder Structure</h2>
-
   <pre>book-discovery-bookmarking-app/
-├── docker-compose.yml               # Postgres for local dev
-├── .env.example                     # JWT_SECRET, GOOGLE_BOOKS_API_KEY, DATABASE_URL
-├── shared/                          # Shared TypeScript types (FE + BE)
+├── docker-compose.yml                  # Postgres for local dev
+├── .env.example                        # Template: JWT_SECRET, GOOGLE_BOOKS_API_KEY, DATABASE_URL, SESSION_SECRET
+├── shared/                             # Shared TypeScript types
 │   ├── types/
-│   │   ├── auth.ts                  # RegisterRequest, LoginRequest, AuthResponse
-│   │   ├── book.ts                  # BookResult, BookDetail
-│   │   └── bookmark.ts             # BookmarkRecord, CreateBookmarkRequest
+│   │   ├── auth.ts                     # RegisterRequest, LoginRequest, AuthResponse
+│   │   ├── book.ts                     # BookResult, BookDetail
+│   │   └── bookmark.ts                 # BookmarkRecord, CreateBookmarkRequest
 │   └── package.json
 │
-├── backend/
+├── backend/                            # Express API server
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── prisma/
-│   │   └── schema.prisma            # User + Bookmark models
+│   │   └── schema.prisma               # User + Bookmark models
 │   └── src/
-│       ├── index.ts                 # Express app entry point
-│       ├── config.ts                # Env var loading + validation
+│       ├── index.ts                    # Express app entry point
+│       ├── config.ts                   # Env var loading + validation
 │       ├── middleware/
-│       │   ├── verifyToken.ts       # JWT cookie auth guard
-│       │   └── errorHandler.ts      # Global error handler
+│       │   ├── verifyToken.ts          # JWT Bearer auth guard
+│       │   └── errorHandler.ts         # Global error handler
 │       ├── routes/
-│       │   ├── auth.ts              # /api/auth/*
-│       │   ├── books.ts             # /api/books/*
-│       │   └── bookmarks.ts         # /api/bookmarks/*
+│       │   ├── auth.ts                 # /api/auth/*
+│       │   ├── books.ts                # /api/books/*
+│       │   └── bookmarks.ts            # /api/bookmarks/*
 │       └── services/
-│           ├── authService.ts       # Register, login, logout logic
-│           ├── bookService.ts       # Google Books proxy + normalisation
-│           └── bookmarkService.ts   # CRUD operations via Prisma
+│           ├── authService.ts          # Pure: register, login logic; side effects at route level
+│           ├── bookService.ts          # Pure: normalize + transform; fetch side effect in route
+│           └── bookmarkService.ts      # Pure: bookmark CRUD logic; Prisma calls at route level
 │
-└── frontend/
+└── frontend/                           # Remix application
     ├── package.json
     ├── tsconfig.json
-    ├── vite.config.ts               # Proxy /api → backend in dev
-    └── src/
-        ├── main.tsx
-        ├── App.tsx                  # Router + AuthProvider
-        ├── api/
-        │   ├── authApi.ts           # register, login, logout, getMe
-        │   ├── booksApi.ts          # searchBooks, getBookDetail
-        │   └── bookmarksApi.ts      # getBookmarks, addBookmark, removeBookmark
+    ├── remix.config.js
+    ├── tailwind.config.ts
+    ├── e2e/                            # Playwright E2E tests
+    │   ├── playwright.config.ts
+    │   ├── auth.spec.ts                # AC 1, 2, 8, 9
+    │   ├── search.spec.ts              # AC 3
+    │   ├── bookmarks.spec.ts           # AC 4, 5, 6
+    │   └── book-detail.spec.ts         # AC 7
+    └── app/
+        ├── root.tsx                    # Root layout, Tailwind, Navbar
+        ├── entry.client.tsx
+        ├── entry.server.tsx
+        ├── session.server.ts           # createCookieSessionStorage, requireUserSession
+        ├── routes/
+        │   ├── _index.tsx              # Redirect: authenticated → /search, else → /login
+        │   ├── register.tsx            # Loader (redirect if authed) + Action (register)
+        │   ├── login.tsx               # Loader (redirect if authed) + Action (login)
+        │   ├── logout.tsx              # Action only (destroys session, redirects)
+        │   ├── search.tsx              # Loader (requireSession, fetch books) + Action (add bookmark)
+        │   ├── bookmarks.tsx           # Loader (requireSession, fetch bookmarks) + Action (remove)
+        │   └── books.$volumeId.tsx     # Loader (requireSession, fetch detail) + Action (add/remove)
         ├── components/
-        │   ├── BookCard.tsx         # Search result card
-        │   ├── BookmarkCard.tsx     # Bookmarked book card
-        │   ├── BookmarkButton.tsx   # Toggle button
-        │   ├── Navbar.tsx           # Nav + logout
-        │   └── RequireAuth.tsx      # Route guard HOC
-        ├── pages/
-        │   ├── RegisterPage.tsx
-        │   ├── LoginPage.tsx
-        │   ├── SearchPage.tsx
-        │   ├── BookmarkListPage.tsx
-        │   └── BookDetailPage.tsx
-        ├── hooks/
-        │   ├── useAuth.ts
-        │   ├── useBookSearch.ts     # TanStack Query: search
-        │   ├── useBookmarks.ts      # TanStack Query: list/add/remove
-        │   └── useBookDetail.ts     # TanStack Query: single book
-        └── context/
-            └── AuthContext.tsx      # User state, login/logout actions</pre>
+        │   ├── BookCard.tsx            # Search result card (cover, title, authors, desc)
+        │   ├── BookmarkCard.tsx        # Bookmarked book card + remove button
+        │   ├── BookmarkButton.tsx      # Toggle: bookmarked / not bookmarked (Remix Form)
+        │   └── Navbar.tsx              # Nav links + logout Form
+        └── utils/
+            ├── api.server.ts           # Fetch wrapper: attaches Bearer token, handles errors
+            └── transforms.ts           # Pure functions: normalise/format book/bookmark data</pre>
 
-  <!-- ─────────────────────────────────────────────── -->
-  <h2>9. Acceptance Criteria → Design Component Mapping</h2>
+  <!-- ─── 9. Development Standards ─── -->
+  <h2>9. Development Standards</h2>
+
+  <div class="callout">
+    <p><strong>All engineers working on this ticket must follow these standards without exception.</strong></p>
+  </div>
+
+  <h3>9.1 Docs-First Mandate</h3>
+  <p>Before writing any implementation code for a framework or library, Dev <strong>must</strong>:</p>
+  <ol>
+    <li><strong>Read the official documentation</strong> for that framework/library in full for the relevant feature area.</li>
+    <li><strong>Follow the official best practices and patterns</strong> as documented — do not invent patterns that contradict the framework's model.</li>
+    <li><strong>Reference doc URLs</strong> in code comments or PR description where non-obvious patterns are used.</li>
+  </ol>
+
+  <p style="margin-top: 14px;"><strong>Required reading before any code is written:</strong></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Technology</th><th>Official Docs URL</th></tr></thead>
+      <tbody>
+        <tr><td>Remix</td><td><a href="https://remix.run/docs/en/main" style="color:#60a5fa">https://remix.run/docs/en/main</a></td></tr>
+        <tr><td>Remix sessions</td><td><a href="https://remix.run/docs/en/main/utils/sessions" style="color:#60a5fa">https://remix.run/docs/en/main/utils/sessions</a></td></tr>
+        <tr><td>Remix loaders</td><td><a href="https://remix.run/docs/en/main/route/loader" style="color:#60a5fa">https://remix.run/docs/en/main/route/loader</a></td></tr>
+        <tr><td>Remix actions</td><td><a href="https://remix.run/docs/en/main/route/action" style="color:#60a5fa">https://remix.run/docs/en/main/route/action</a></td></tr>
+        <tr><td>Prisma</td><td><a href="https://www.prisma.io/docs" style="color:#60a5fa">https://www.prisma.io/docs</a></td></tr>
+        <tr><td>Prisma migrations</td><td><a href="https://www.prisma.io/docs/orm/prisma-migrate" style="color:#60a5fa">https://www.prisma.io/docs/orm/prisma-migrate</a></td></tr>
+        <tr><td>Tailwind CSS</td><td><a href="https://tailwindcss.com/docs" style="color:#60a5fa">https://tailwindcss.com/docs</a></td></tr>
+        <tr><td>Playwright</td><td><a href="https://playwright.dev/docs/intro" style="color:#60a5fa">https://playwright.dev/docs/intro</a></td></tr>
+        <tr><td>Vitest</td><td><a href="https://vitest.dev/guide/" style="color:#60a5fa">https://vitest.dev/guide/</a></td></tr>
+        <tr><td>Zod</td><td><a href="https://zod.dev" style="color:#60a5fa">https://zod.dev</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>This is not optional. A PR that misuses a framework's documented patterns will be rejected in code review regardless of whether tests pass.</p>
+
+  <h3>9.2 Test-Driven Development (TDD) — First-Class Constraint</h3>
+  <p>TDD is <strong>mandatory</strong> at all layers. This is not an afterthought — it is the primary development workflow.</p>
+
+  <div class="callout">
+    <p><strong>The rule:</strong> A failing test must be written before any implementation code. A feature is not considered done until all its tests pass.</p>
+  </div>
+
+  <p>This applies to:</p>
+  <ul>
+    <li><strong>Unit tests</strong> (Vitest): pure functions in <code>services/</code>, <code>utils/</code>, and <code>transforms.ts</code></li>
+    <li><strong>Integration tests</strong> (Vitest + Supertest): Express route handlers calling a test database</li>
+    <li><strong>E2E tests</strong> (Playwright): full user journey against a running app (see Section 11)</li>
+  </ul>
+
+  <p><strong>TDD workflow per feature:</strong></p>
+  <ol>
+    <li>Read the AC for the feature from TICKET-002.md</li>
+    <li>Write a failing test that encodes the AC</li>
+    <li>Write the minimum implementation to make the test pass</li>
+    <li>Refactor (clean up, extract helpers) — tests must remain green</li>
+    <li>Repeat for the next AC</li>
+  </ol>
+
+  <div class="callout callout-red">
+    <p><strong>No feature is mergeable with a failing test.</strong> CI must run all tests on every PR; the PR gate blocks merge on any failure.</p>
+  </div>
+
+  <!-- ─── 10. FP Constraints ─── -->
+  <h2>10. Functional Programming Constraints</h2>
+
+  <div class="callout callout-blue">
+    <p>These constraints apply to <strong>both</strong> the frontend (Remix routes, components, utils) and the backend (Express services, route handlers).</p>
+  </div>
+
+  <h3>10.1 Pure Functions</h3>
+  <p>Every business logic function must be <strong>pure</strong>: given the same input, it always returns the same output, and it has no side effects.</p>
+  <pre><span class="comment">// ✅ Pure — always same output for same input, no side effects</span>
+const truncateDescription = (desc: string, maxLength: number): string =&gt;
+  desc.length &lt;= maxLength ? desc : `${desc.slice(0, maxLength)}...`;
+
+<span class="comment">// ❌ Impure — reads external state, mutates</span>
+const truncateDescription = (desc: string): string =&gt; {
+  config.lastTruncated = desc; <span class="comment">// side effect</span>
+  return desc.slice(0, globalMaxLength); <span class="comment">// reads external state</span>
+};</pre>
+
+  <h3>10.2 Composition Over Inheritance</h3>
+  <p>Build complex logic by composing small, single-purpose functions. Do not use classes with inheritance hierarchies in business logic.</p>
+  <pre><span class="comment">// ✅ Composed from small pure functions</span>
+const normalizeBook = (volume: GoogleBooksVolume): BookResult =&gt; ({
+  volumeId: extractVolumeId(volume),
+  title: extractTitle(volume),
+  authors: extractAuthors(volume),
+  thumbnailUrl: extractThumbnailUrl(volume),
+  description: truncateDescription(extractDescription(volume), 200),
+});</pre>
+
+  <h3>10.3 Immutability</h3>
+  <p><strong>Never mutate objects or arrays.</strong> Use spread, <code>map</code>, <code>filter</code>, and <code>reduce</code> for all transformations.</p>
+  <pre><span class="comment">// ✅ Immutable</span>
+const addBookmark = (bookmarks: Bookmark[], newBookmark: Bookmark): Bookmark[] =&gt;
+  [...bookmarks, newBookmark];
+
+const removeBookmark = (bookmarks: Bookmark[], volumeId: string): Bookmark[] =&gt;
+  bookmarks.filter(b =&gt; b.googleVolumeId !== volumeId);
+
+<span class="comment">// ❌ Mutation</span>
+bookmarks.push(newBookmark);
+bookmarks.splice(index, 1);</pre>
+
+  <h3>10.4 No FP Libraries</h3>
+  <p>Use <strong>native TypeScript only</strong>. The following libraries are explicitly <strong>prohibited</strong>:</p>
+  <ul>
+    <li><code>fp-ts</code></li>
+    <li><code>ramda</code></li>
+    <li><code>lodash/fp</code></li>
+    <li><code>sanctuary</code></li>
+    <li>Any other functional programming utility library</li>
+  </ul>
+  <p>Native <code>Array.prototype</code> methods, <code>Object.assign</code>, spread syntax, and <code>structuredClone</code> are sufficient.</p>
+
+  <h3>10.5 Side Effects at the Edge</h3>
+  <p>Side effects (database calls, HTTP calls, session reads/writes, logging) must be <strong>isolated at the outermost layer</strong> and kept out of business logic functions.</p>
 
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr><th>AC</th><th>Criterion</th><th>Backend Component</th><th>Frontend Component</th></tr>
-      </thead>
+      <thead><tr><th>Layer</th><th>Allowed</th><th>Not Allowed</th></tr></thead>
       <tbody>
-        <tr class="ac-row"><td>1a</td><td>Register valid email + ≥8 char password → account created, auto-login</td><td>authService.register → Zod → bcrypt → Prisma insert → JWT cookie</td><td>RegisterPage + React Hook Form + Zod schema</td></tr>
-        <tr class="ac-row"><td>1b</td><td>Duplicate email → 409 Conflict</td><td>Prisma unique constraint catch → 409</td><td>RegisterPage error display</td></tr>
-        <tr class="ac-row"><td>1c</td><td>Password &lt; 8 chars → validation error</td><td>Zod schema on POST /api/auth/register → 400</td><td>Client-side Zod + server error display</td></tr>
-        <tr class="ac-row"><td>2a</td><td>Correct credentials → login + redirect</td><td>authService.login → bcrypt.compare → JWT cookie → 200</td><td>LoginPage → navigate to /search on success</td></tr>
-        <tr class="ac-row"><td>2b</td><td>Incorrect credentials → ambiguous error</td><td>Always 401 with same message (no enumeration)</td><td>LoginPage error state display</td></tr>
-        <tr class="ac-row"><td>3a</td><td>Search query → up to 20 results</td><td>bookService.search → Google Books proxy</td><td>SearchPage + useBookSearch + BookCard list</td></tr>
-        <tr class="ac-row"><td>3b</td><td>Each card: cover, title, authors, truncated desc</td><td>bookService.normalize (200-char truncation)</td><td>BookCard component</td></tr>
-        <tr class="ac-row"><td>3c</td><td>No results → friendly message</td><td>Returns { results: [], totalItems: 0 }</td><td>SearchPage conditional: "No books found"</td></tr>
-        <tr class="ac-row"><td>3d</td><td>API unavailable → user-friendly error, no crash</td><td>try/catch in bookService → 502</td><td>TanStack Query error state → inline error banner</td></tr>
-        <tr class="ac-row"><td>4a</td><td>Bookmark saves book + button state changes</td><td>bookmarkService.create → Prisma upsert</td><td>BookmarkButton + TanStack Query cache invalidation</td></tr>
-        <tr class="ac-row"><td>4b</td><td>Already bookmarked → idempotent, no duplicate</td><td>DB @@unique + upsert → 200</td><td>BookmarkButton reads bookmarked state from useBookmarks</td></tr>
-        <tr class="ac-row"><td>5a</td><td>Bookmark list shows all saved books</td><td>GET /api/bookmarks → Prisma findMany by userId</td><td>BookmarkListPage + useBookmarks + BookmarkCard</td></tr>
-        <tr class="ac-row"><td>5b</td><td>Empty list → friendly prompt</td><td>Returns empty array</td><td>BookmarkListPage: "No bookmarks yet"</td></tr>
-        <tr class="ac-row"><td>6</td><td>Remove bookmark → immediate removal</td><td>DELETE /api/bookmarks/:volumeId → Prisma delete</td><td>BookmarkCard remove + optimistic TanStack Query cache update</td></tr>
-        <tr class="ac-row"><td>7a</td><td>Book detail page with all fields</td><td>GET /api/books/:volumeId → Google Books proxy</td><td>BookDetailPage + useBookDetail hook</td></tr>
-        <tr class="ac-row"><td>7b</td><td>Missing fields omitted gracefully</td><td>bookService.normalize null checks</td><td>BookDetailPage conditional field rendering</td></tr>
-        <tr class="ac-row"><td>8</td><td>Logout → session destroyed, redirect to login</td><td>POST /api/auth/logout → clear cookie</td><td>Navbar logout → AuthContext.logout → navigate(/login)</td></tr>
-        <tr class="ac-row"><td>9a</td><td>Unauthenticated access → redirect to login</td><td>verifyToken middleware → 401</td><td>RequireAuth HOC → &lt;Navigate to="/login" /&gt;</td></tr>
-        <tr class="ac-row"><td>9b</td><td>Users cannot see others' bookmark lists</td><td>All bookmark queries filtered by userId from JWT</td><td>N/A — enforced at API level</td></tr>
+        <tr><td>Backend <code>services/</code></td><td>Pure logic, transformations, validation schemas</td><td>Prisma calls, <code>fetch</code>, <code>console.log</code></td></tr>
+        <tr><td>Backend route handlers</td><td>Prisma calls, JWT verification, error responses</td><td>Business logic embedded directly</td></tr>
+        <tr><td>Frontend <code>utils/transforms.ts</code></td><td>Pure transformation functions</td><td><code>fetch</code>, session access</td></tr>
+        <tr><td>Frontend loaders/actions</td><td><code>fetch</code>, session reads/writes, redirects</td><td>Business logic embedded directly</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- ─────────────────────────────────────────────── -->
-  <h2>10. Environment Variables</h2>
-  <pre>DATABASE_URL=postgresql://postgres:password@localhost:5432/bookmarks_db
+  <pre><span class="comment">// ✅ Backend route handler (side effects here)</span>
+router.post("/bookmarks", verifyToken, async (req, res) =&gt; {
+  const parsed = createBookmarkSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error });
+  const bookmark = buildBookmark(req.user.userId, parsed.data); <span class="comment">// pure fn</span>
+  const saved = await prisma.bookmark.upsert({ ... }); <span class="comment">// side effect at edge</span>
+  res.status(201).json({ bookmark: saved });
+});
+
+<span class="comment">// ✅ Pure service function (no side effects)</span>
+const buildBookmark = (userId: string, data: CreateBookmarkRequest): BookmarkCreateInput =&gt; ({
+  userId,
+  googleVolumeId: data.googleVolumeId,
+  title: data.title,
+  authors: data.authors,
+  thumbnailUrl: data.thumbnailUrl ?? null,
+  description: data.description ?? null,
+});</pre>
+
+  <!-- ─── 11. E2E Test Suite ─── -->
+  <h2>11. E2E Test Suite (Playwright)</h2>
+
+  <h3>11.1 Configuration</h3>
+  <pre><span class="comment">// e2e/playwright.config.ts</span>
+import { defineConfig } from "@playwright/test";
+
+export default defineConfig({
+  testDir: "./e2e",
+  fullyParallel: false,       <span class="comment">// sequential to avoid session conflicts</span>
+  retries: 1,
+  use: {
+    baseURL: process.env.BASE_URL ?? "http://localhost:3000",
+    browserName: "chromium",  <span class="comment">// minimum target</span>
+  },
+  projects: [
+    { name: "chromium", use: { browserName: "chromium" } },
+  ],
+});</pre>
+
+  <ul>
+    <li><strong>Browser targets:</strong> Chromium (mandatory). Firefox and WebKit may be added post-MVP.</li>
+    <li><strong>Test directory:</strong> <code>frontend/e2e/</code></li>
+    <li><strong>Base URL:</strong> <code>http://localhost:3000</code> (Remix dev server)</li>
+    <li><strong>Gate:</strong> All Playwright tests must pass on every PR. A PR is <span class="badge badge-red">NOT MERGEABLE</span> if any E2E test fails.</li>
+  </ul>
+
+  <h3>11.2 E2E Test Scenarios</h3>
+
+  <h4 style="color:#f6ad55; font-family: inherit; font-size:15px; margin-top:24px;">auth.spec.ts — Authentication &amp; Access Control</h4>
+
+  <div class="test-card">
+    <h4>register - valid credentials creates account and redirects to search</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 1a</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">No account with <code>test@example.com</code> exists</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/register</code></li><li>Fill email: <code>test@example.com</code>, password: <code>password123</code></li><li>Click "Register"</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Redirected to <code>/search</code></span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>register - duplicate email shows conflict error</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 1b</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">Account with <code>dupe@example.com</code> already exists</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/register</code></li><li>Fill email: <code>dupe@example.com</code>, password: <code>password123</code></li><li>Click "Register"</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Stays on <code>/register</code>; error "email already in use" is visible</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>register - short password shows validation error</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 1c</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">None</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/register</code></li><li>Fill email: <code>new@example.com</code>, password: <code>abc</code> (3 chars)</li><li>Click "Register"</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Error: password must be at least 8 characters; no redirect</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>login - correct credentials logs in and redirects to search</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 2a</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">Account <code>login@example.com</code> / <code>password123</code> exists</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/login</code></li><li>Fill credentials</li><li>Click "Log In"</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Redirected to <code>/search</code></span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>login - incorrect credentials shows ambiguous error</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 2b</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">None</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/login</code></li><li>Fill email: <code>nobody@example.com</code>, password: <code>wrongpass</code></li><li>Click "Log In"</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">"Invalid email or password" visible; stays on <code>/login</code></span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>logout - destroys session and redirects to login</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 8</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User is logged in</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Log in as valid user</li><li>Click "Logout" in navbar</li><li>Attempt to navigate to <code>/search</code></li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Redirected to <code>/login</code> after logout; <code>/search</code> also redirects to <code>/login</code></span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>access control - unauthenticated user redirected from all protected routes</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 9a</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">Browser has no active session</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/search</code> directly</li><li>Navigate to <code>/bookmarks</code> directly</li><li>Navigate to <code>/books/someVolumeId</code> directly</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Each results in redirect to <code>/login</code></span></div>
+  </div>
+
+  <h4 style="color:#f6ad55; font-family: inherit; font-size:15px; margin-top:24px;">search.spec.ts — Book Search</h4>
+
+  <div class="test-card">
+    <h4>search - returns up to 20 results for a valid query</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 3a</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User is authenticated</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/search</code></li><li>Enter "clean code" in search box</li><li>Submit the form</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Up to 20 book result cards displayed</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>search - each result card shows cover, title, authors, truncated description</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 3b</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; search "javascript" returns at least one full result</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Search for "javascript"</li><li>Inspect the first result card</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Card shows image (or placeholder), title, ≥1 author, description ≤ 200 chars; no "undefined" text</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>search - no results shows friendly message</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 3c</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Search for "zzzzzzzqqqqq9999notabook"</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">"No books found" message displayed; no crash</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>search - API error shows user-friendly error banner</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 3d</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; backend search route mocked to return 502</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Intercept backend search route to return error</li><li>Navigate to <code>/search</code> and submit any query</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Error message displayed (e.g. "Book search temporarily unavailable"); page does not crash</span></div>
+  </div>
+
+  <h4 style="color:#f6ad55; font-family: inherit; font-size:15px; margin-top:24px;">bookmarks.spec.ts — Bookmarking</h4>
+
+  <div class="test-card">
+    <h4>bookmark - clicking Bookmark saves book and updates button state</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 4a</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; book not already bookmarked</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Search for "clean code"</li><li>Click "Bookmark" on first result</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Button changes to "Bookmarked" state; book appears in <code>/bookmarks</code></span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>bookmark - clicking Bookmark on an already-bookmarked book has no effect</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 4b</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; book already bookmarked</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Search for the already-bookmarked book</li><li>Click "Bookmark" on it (shows active state)</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">No error; no duplicate in <code>/bookmarks</code>; count unchanged</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>bookmark list - shows all saved books</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 5a</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; user has ≥2 bookmarks</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/bookmarks</code></li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">All bookmarked books displayed with cover, title, and author(s)</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>bookmark list - empty state shows prompt</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 5b</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; zero bookmarks</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/bookmarks</code></li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">"No bookmarks yet" message shown; no book cards rendered</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>remove bookmark - book is removed immediately</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 6</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; ≥1 bookmarked book</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/bookmarks</code></li><li>Click "Remove" on the first bookmarked book</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Book no longer present in list; page does not crash</span></div>
+  </div>
+
+  <h4 style="color:#f6ad55; font-family: inherit; font-size:15px; margin-top:24px;">book-detail.spec.ts — Book Detail Page</h4>
+
+  <div class="test-card">
+    <h4>book detail - shows full detail page when clicking a search result</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 7a</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; search returns ≥1 result with full metadata</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Search for "clean code"</li><li>Click on the first result card</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Detail page shows: cover, title, author(s), publisher, published date, description, page count, categories</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>book detail - missing fields are omitted gracefully</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 7b</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; known volume with missing fields available</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to a book detail page for a known sparse volume</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">No "undefined", "null", or empty label elements visible; only fields with values rendered</span></div>
+  </div>
+
+  <div class="test-card">
+    <h4>book detail - accessible from bookmark list</h4>
+    <div class="test-row"><span class="test-label">Maps to</span><span class="test-value">AC 7a (bookmark navigation path)</span></div>
+    <div class="test-row"><span class="test-label">Precondition</span><span class="test-value">User authenticated; ≥1 bookmarked book</span></div>
+    <div class="test-row"><span class="test-label">Steps</span>
+      <ol><li>Navigate to <code>/bookmarks</code></li><li>Click the title/card of first bookmarked book</li></ol>
+    </div>
+    <div class="test-row"><span class="test-label">Expected</span><span class="test-value">Book detail page loads with correct book information</span></div>
+  </div>
+
+  <!-- ─── 12. AC Mapping ─── -->
+  <h2>12. Acceptance Criteria → Design Component Mapping</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>AC</th><th>Criterion</th><th>Backend Component</th><th>Frontend (Remix) Component</th></tr>
+      </thead>
+      <tbody>
+        <tr class="ac-row"><td>1a</td><td>Register valid credentials → account + auto-login</td><td><code>authService.register</code> → Zod → bcrypt → Prisma insert → returns JWT</td><td><code>register.tsx</code> action → stores token in Remix session → redirect <code>/search</code></td></tr>
+        <tr class="ac-row"><td>1b</td><td>Duplicate email → 409</td><td>Prisma unique constraint catch → 409</td><td>Action returns <code>{ error }</code> → component renders error</td></tr>
+        <tr class="ac-row"><td>1c</td><td>Password &lt; 8 chars → validation error</td><td>Zod schema → 400</td><td>Action Zod parse → returns validation error</td></tr>
+        <tr class="ac-row"><td>2a</td><td>Correct credentials → login + redirect</td><td><code>authService.login</code> → bcrypt.compare → returns JWT</td><td><code>login.tsx</code> action → stores token → redirect <code>/search</code></td></tr>
+        <tr class="ac-row"><td>2b</td><td>Incorrect credentials → ambiguous error</td><td>Always 401 same message</td><td>Action returns <code>{ error }</code> → component renders error</td></tr>
+        <tr class="ac-row"><td>3a</td><td>Search → up to 20 Google Books results</td><td><code>bookService.search</code> → Google Books proxy → normalize</td><td><code>search.tsx</code> loader → <code>useLoaderData()</code> → <code>&lt;BookCard&gt;</code> list</td></tr>
+        <tr class="ac-row"><td>3b</td><td>Each result: cover, title, authors, truncated description</td><td><code>bookService.normalize</code> (200-char truncation)</td><td><code>&lt;BookCard&gt;</code> component; placeholder if no thumbnail</td></tr>
+        <tr class="ac-row"><td>3c</td><td>No results → friendly message</td><td>Returns <code>{ results: [], totalItems: 0 }</code></td><td><code>search.tsx</code>: conditional "No books found"</td></tr>
+        <tr class="ac-row"><td>3d</td><td>API unavailable → user-friendly error, no crash</td><td>try/catch → 502</td><td>Loader throws → Remix <code>ErrorBoundary</code> → error banner</td></tr>
+        <tr class="ac-row"><td>4a</td><td>Bookmark saves + button changes</td><td><code>bookmarkService</code> → Prisma upsert</td><td><code>search.tsx</code> action with Remix <code>&lt;Form method="post"&gt;</code>; loader revalidates bookmark state</td></tr>
+        <tr class="ac-row"><td>4b</td><td>Already bookmarked → idempotent</td><td>DB <code>UNIQUE</code> + upsert → 200</td><td>Loader returns current bookmarks; <code>&lt;BookmarkButton&gt;</code> reflects state</td></tr>
+        <tr class="ac-row"><td>5a</td><td>Bookmark list shows all saved books</td><td><code>GET /api/bookmarks</code> → Prisma findMany</td><td><code>bookmarks.tsx</code> loader → <code>&lt;BookmarkCard&gt;</code> list</td></tr>
+        <tr class="ac-row"><td>5b</td><td>Empty list → friendly prompt</td><td>Returns empty array</td><td>Conditional "No bookmarks yet"</td></tr>
+        <tr class="ac-row"><td>6</td><td>Remove bookmark → immediate removal</td><td><code>DELETE /api/bookmarks/:volumeId</code> → Prisma delete</td><td><code>bookmarks.tsx</code> action (Remix Form + <code>_method=DELETE</code>) → loader revalidates</td></tr>
+        <tr class="ac-row"><td>7a</td><td>Book detail page with all fields</td><td><code>GET /api/books/:volumeId</code> → Google Books proxy</td><td><code>books.$volumeId.tsx</code> loader → full detail component</td></tr>
+        <tr class="ac-row"><td>7b</td><td>Missing fields omitted gracefully</td><td><code>bookService.normalize</code> → null checks</td><td>Component: conditional rendering per field</td></tr>
+        <tr class="ac-row"><td>8</td><td>Logout → session destroyed, redirect</td><td>Optional: <code>POST /api/auth/logout</code></td><td><code>logout.tsx</code> action → <code>destroySession()</code> → redirect <code>/login</code></td></tr>
+        <tr class="ac-row"><td>9a</td><td>Unauthenticated → redirect to login</td><td><code>verifyToken</code> middleware → 401</td><td><code>requireUserSession(request)</code> in every protected loader → <code>redirect("/login")</code></td></tr>
+        <tr class="ac-row"><td>9b</td><td>Users cannot see others' bookmarks</td><td>All queries filtered by <code>userId</code> from JWT</td><td>N/A — enforced at API level</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ─── 13. Environment Variables ─── -->
+  <h2>13. Environment Variables</h2>
+  <pre><span class="comment"># Backend</span>
+DATABASE_URL=postgresql://postgres:password@localhost:5432/bookmarks_db
 JWT_SECRET=&lt;random-256-bit-hex&gt;
 GOOGLE_BOOKS_API_KEY=&lt;optional-google-api-key&gt;
 PORT=3001
 NODE_ENV=development
 
-# Frontend (Vite)
-VITE_API_BASE_URL=http://localhost:3001</pre>
+<span class="comment"># Frontend (Remix)</span>
+SESSION_SECRET=&lt;random-256-bit-hex&gt;          <span class="comment"># Remix session cookie signing</span>
+API_BASE_URL=http://localhost:3001            <span class="comment"># Backend URL (server-side only)</span>
+BASE_URL=http://localhost:3000               <span class="comment"># Remix app URL (for E2E tests)</span></pre>
 
-  <!-- ─────────────────────────────────────────────── -->
-  <h2>11. Key Design Decisions Summary</h2>
+  <!-- ─── 14. Development Startup ─── -->
+  <h2>14. Development Startup</h2>
+  <pre><span class="comment"># 1. Start Postgres</span>
+docker-compose up -d
+
+<span class="comment"># 2. Backend</span>
+cd backend
+npm install
+npx prisma migrate dev --name init
+npm run dev          <span class="comment"># ts-node-dev, port 3001</span>
+
+<span class="comment"># 3. Frontend (Remix)</span>
+cd frontend
+npm install
+npm run dev          <span class="comment"># Remix dev server, port 3000</span>
+
+<span class="comment"># 4. Run E2E tests (requires both servers running)</span>
+cd frontend
+npx playwright test</pre>
+
+  <!-- ─── 15. Key Design Decisions ─── -->
+  <h2>15. Key Design Decisions Summary</h2>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Decision</th><th>Choice</th><th>Reason</th></tr></thead>
       <tbody>
-        <tr><td>Frontend framework</td><td>React 18 + TypeScript</td><td>Industry standard, strong ecosystem, SPA fits the UX model</td></tr>
+        <tr><td>Frontend framework</td><td><strong>Remix</strong> + TypeScript</td><td>SSR, file-based routing, loaders/actions eliminate client-side data-fetching; reduces bundle size and complexity</td></tr>
         <tr><td>Backend framework</td><td>Express 5 + Node.js</td><td>Lightweight, well-known, suits proxy workloads</td></tr>
-        <tr><td>Database</td><td>PostgreSQL + Prisma</td><td>Relational integrity; Prisma type safety; JSONB for authors array</td></tr>
-        <tr><td>Auth mechanism</td><td>JWT in httpOnly cookie</td><td>XSS-safe; no localStorage token management needed</td></tr>
-        <tr><td>Google Books proxy</td><td>Backend proxy pattern</td><td>Keeps API key server-side; centralises error handling; single retry point</td></tr>
-        <tr><td>Bookmark metadata storage</td><td>Snapshot at bookmark time</td><td>Bookmark list renders without live API call; tolerant of Google Books changes</td></tr>
+        <tr><td>Database</td><td>PostgreSQL + Prisma</td><td>Relational integrity; Prisma type safety</td></tr>
+        <tr><td>Auth mechanism</td><td>JWT in Remix session cookie (signed, HttpOnly)</td><td>XSS-safe; session management owned by Remix; no JWT in browser localStorage</td></tr>
+        <tr><td>Data flow</td><td>All API calls via Remix loaders/actions (server-to-server)</td><td>Browser never calls Express directly; no client-side fetch required</td></tr>
+        <tr><td>Google Books proxy</td><td>Express backend proxy</td><td>Keeps API key server-side; centralises error handling</td></tr>
+        <tr><td>Bookmark storage</td><td>Snapshot metadata at bookmark time</td><td>List renders without live API call; tolerant of Google Books changes</td></tr>
         <tr><td>Idempotency</td><td>DB unique constraint + upsert</td><td>No duplicate bookmarks even under concurrent requests</td></tr>
-        <tr><td>Description truncation</td><td>200 chars in search, full in detail</td><td>Matches AC 3b / AC 7 spec requirements exactly</td></tr>
-        <tr><td>Authors storage</td><td>JSONB array in Postgres</td><td>Simple for MVP; avoids unnecessary join table</td></tr>
+        <tr><td>TDD</td><td>Mandatory at all layers</td><td>Failing tests written first; no feature done until tests pass</td></tr>
+        <tr><td>FP constraints</td><td>Pure functions, immutability, composition, native TS only</td><td>Predictable behaviour, easier testing, no hidden state</td></tr>
+        <tr><td>E2E framework</td><td>Playwright (Chromium minimum)</td><td>Modern, reliable, covers all ACs; official docs well-maintained</td></tr>
+        <tr><td>Docs-first</td><td>Official docs read before coding</td><td>Prevents anti-patterns; ensures framework is used as intended</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="footer">
-    <p>TICKET-002-architecture.html &nbsp;·&nbsp; Generated by Architect Agent &nbsp;·&nbsp; 2026-03-12</p>
-    <p style="margin-top:4px;">Status: <span class="badge badge-amber">Awaiting Approval</span></p>
+    <p>TICKET-002 Architecture · Revision 2 · Generated 2026-03-14 · Architect Agent</p>
+    <p style="margin-top:4px; color: #d97706;">⏳ Awaiting Sir's approval before implementation begins</p>
   </div>
 
 </div>
