@@ -192,6 +192,8 @@
   /* ─── Strikethrough ─── */
   del { color: #4a5568; text-decoration: line-through; }
 
+  a { color: #63b3ed; text-decoration: none; }
+  a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -199,14 +201,14 @@
 <div class="banner">
   <span class="icon">⏳</span>
   AWAITING APPROVAL — TICKET-002 Architecture: Book Discovery &amp; Bookmarking App
-  <span style="margin-left:16px; opacity:0.7; font-weight:400;">Revision 3 · Hexagonal Architecture + Repository + Use Case patterns · 2026-03-14</span>
+  <span style="margin-left:16px; opacity:0.7; font-weight:400;">Revision 4 · Docker + Tilt + GitHub Actions CD · 2026-03-14</span>
 </div>
 
 <div class="container">
 <h1>TICKET-002 Architecture: Book Discovery &amp; Bookmarking App</h1>
 <p><strong>Status:</strong> Awaiting Approval
 <strong>Prepared by:</strong> Architect Agent
-<strong>Revision:</strong> 3 (Hexagonal Architecture + Repository + Use Case patterns)
+<strong>Revision:</strong> 4 (+ Containerisation + Tilt local dev + GitHub Actions CD)
 <strong>Date:</strong> 2026-03-14
 <strong>Spec:</strong> <code>~/factory/specs/TICKET-002.md</code></p>
 <hr>
@@ -974,8 +976,12 @@ router.post(&quot;/register&quot;, async (req, res) =&gt; {
 <hr>
 <h2>9. Folder Structure</h2>
 <pre><code>book-discovery-bookmarking-app/
-├── docker-compose.yml                  # Postgres for local dev
+├── Tiltfile                            # Local dev orchestration (see Section 18)
+├── docker-compose.yml                  # Postgres container used by Tilt (not run directly)
 ├── .env.example                        # Template: JWT_SECRET, GOOGLE_BOOKS_API_KEY, DATABASE_URL, SESSION_SECRET
+├── .github/
+│   └── workflows/
+│       └── cd.yml                      # GitHub Actions CD pipeline (see Section 19)
 ├── shared/                             # Shared TypeScript types
 │   ├── types/
 │   │   ├── auth.ts                     # RegisterRequest, LoginRequest, AuthResponse
@@ -984,6 +990,8 @@ router.post(&quot;/register&quot;, async (req, res) =&gt; {
 │   └── package.json
 │
 ├── backend/                            # Express API server (Hexagonal Architecture)
+│   ├── Dockerfile                      # Multi-stage build: builder + runner (see Section 17)
+│   ├── .dockerignore                   # Excludes node_modules, .env, dist, etc.
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── prisma/
@@ -1032,6 +1040,8 @@ router.post(&quot;/register&quot;, async (req, res) =&gt; {
 │                   └── errorHandler.ts # Maps domain errors → HTTP status codes
 │
 └── frontend/                           # Remix application
+    ├── Dockerfile                      # Multi-stage build: builder + runner (see Section 17)
+    ├── .dockerignore                   # Excludes node_modules, .env, build, etc.
     ├── package.json
     ├── tsconfig.json
     ├── remix.config.js
@@ -1663,23 +1673,26 @@ BASE_URL=http://localhost:3000               # Remix app URL (for E2E tests)
 </code></pre>
 <hr>
 <h2>15. Development Startup</h2>
-<pre><code class="language-bash"># 1. Start Postgres
-docker-compose up -d
+<blockquote>
+<p><strong>Local dev is now powered by Tilt.</strong> See Section 18 for the full Tilt setup and prerequisites.</p>
+</blockquote>
+<pre><code class="language-bash"># Prerequisites: Tilt, Docker Desktop, gh CLI installed (see Section 18.1)
 
-# 2. Backend
-cd backend
-npm install
-npx prisma migrate dev --name init
-npm run dev          # ts-node-dev, port 3001
+# Start everything (Postgres + backend + frontend + migrations + seed)
+tilt up
 
-# 3. Frontend (Remix)
-cd frontend
-npm install
-npm run dev          # Remix dev server, port 3000
+# Stop everything
+tilt down
 
-# 4. Run E2E tests (requires both servers running)
+# Run E2E tests (requires all services running via tilt up)
 cd frontend
 npx playwright test
+</code></pre>
+<p>The legacy manual startup commands below are preserved for reference only — <code>tilt up</code> supersedes them:</p>
+<pre><code class="language-bash"># Manual (reference only — use tilt up in practice)
+docker-compose up -d          # Postgres only
+cd backend &amp;&amp; npm run dev     # port 3001
+cd frontend &amp;&amp; npm run dev    # port 3000
 </code></pre>
 <hr>
 <h2>16. Key Design Decisions Summary</h2>
@@ -1776,7 +1789,571 @@ npx playwright test
 <td>Official docs read before coding</td>
 <td>Prevents anti-patterns; ensures framework is used as intended</td>
 </tr>
+<tr>
+<td>Containerisation</td>
+<td>Multi-stage Docker builds (<code>node:20-alpine</code>)</td>
+<td>Minimal production images; non-root runtime user; secrets never baked in</td>
+</tr>
+<tr>
+<td>Local dev orchestration</td>
+<td>Tilt (replaces Docker Compose)</td>
+<td>Single <code>tilt up</code> starts all services; live sync for hot reload; port forwarding; integrated log UI</td>
+</tr>
+<tr>
+<td>CD pipeline</td>
+<td>GitHub Actions → ghcr.io → VPS SSH deploy</td>
+<td>Pragmatic; no Kubernetes required; full test gate before build/push/deploy</td>
+</tr>
 </tbody></table>
+<hr>
+<h2>17. Containerisation</h2>
+<p>Both services are packaged as Docker images using <strong>multi-stage builds</strong> on <code>node:20-alpine</code>. Production images are kept minimal: compiled output + runtime dependencies only. Secrets are <strong>never</strong> baked into images — they are injected at runtime.</p>
+<p><strong>Image naming convention:</strong> <code>jarvis-jupiter/&lt;service&gt;:&lt;tag&gt;</code></p>
+<ul>
+<li><code>jarvis-jupiter/bookapp-backend:latest</code></li>
+<li><code>jarvis-jupiter/bookapp-frontend:latest</code></li>
+</ul>
+<p>When pushed to GitHub Container Registry: <code>ghcr.io/jarvis-jupiter/bookapp-backend:&lt;sha&gt;</code> / <code>ghcr.io/jarvis-jupiter/bookapp-frontend:&lt;sha&gt;</code></p>
+<hr>
+<h3>17.1 Backend Dockerfile (<code>backend/Dockerfile</code>)</h3>
+<pre><code class="language-dockerfile"># ── Stage 1: builder ─────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install all deps (including devDependencies for tsc + prisma generate)
+COPY package*.json ./
+RUN npm ci
+
+# Copy source and Prisma schema
+COPY prisma ./prisma
+COPY tsconfig.json ./
+COPY src ./src
+
+# Generate Prisma client and compile TypeScript
+RUN npx prisma generate
+RUN npx tsc --project tsconfig.json
+
+# ── Stage 2: runner ───────────────────────────────────────────────────
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Production deps only
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy compiled output and generated Prisma client from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY prisma ./prisma
+
+# Non-root user for security
+RUN addgroup -S appgroup &amp;&amp; adduser -S appuser -G appgroup
+USER appuser
+
+EXPOSE 3001
+
+CMD [&quot;node&quot;, &quot;dist/index.js&quot;]
+</code></pre>
+<p><strong>Runtime environment variables</strong> (passed via <code>--env-file</code> or container env — never in the image):</p>
+<ul>
+<li><code>DATABASE_URL</code></li>
+<li><code>JWT_SECRET</code></li>
+<li><code>GOOGLE_BOOKS_API_KEY</code></li>
+<li><code>PORT</code> (default 3001)</li>
+<li><code>NODE_ENV</code></li>
+</ul>
+<hr>
+<h3>17.2 Frontend Dockerfile (<code>frontend/Dockerfile</code>)</h3>
+<pre><code class="language-dockerfile"># ── Stage 1: builder ─────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# Build Remix application (Vite-based build)
+RUN npm run build
+# Equivalent: npx remix vite:build
+
+# ── Stage 2: runner ───────────────────────────────────────────────────
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy built Remix output from builder
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/public ./public
+
+# Non-root user
+RUN addgroup -S appgroup &amp;&amp; adduser -S appuser -G appgroup
+USER appuser
+
+EXPOSE 3000
+
+CMD [&quot;npm&quot;, &quot;run&quot;, &quot;start&quot;]
+</code></pre>
+<p><strong>Runtime environment variables</strong>:</p>
+<ul>
+<li><code>SESSION_SECRET</code></li>
+<li><code>API_BASE_URL</code> (URL of the backend Express service)</li>
+<li><code>NODE_ENV</code></li>
+</ul>
+<hr>
+<h3>17.3 <code>.dockerignore</code> (both <code>backend/</code> and <code>frontend/</code>)</h3>
+<pre><code>node_modules
+.env
+*.local
+dist
+build
+.git
+coverage
+e2e
+*.test.ts
+*.spec.ts
+</code></pre>
+<p><strong>Rule:</strong> Secrets must never appear in a built image. <code>DATABASE_URL</code>, <code>SESSION_SECRET</code>, and <code>GOOGLE_BOOKS_API_KEY</code> are injected at container runtime via <code>--env-file .env</code> or the hosting platform&#39;s environment variable system.</p>
+<hr>
+<h2>18. Local Development Environment (Tilt)</h2>
+<p><strong>Tilt</strong> (<a href="https://tilt.dev">https://tilt.dev</a>) is the single tool for local development. It replaces manual <code>docker-compose up</code> + separate terminal windows. One command starts the full stack with live reload, port forwarding, and integrated logging.</p>
+<h3>18.1 Prerequisites</h3>
+<p>Install the following before running the dev environment:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Install</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Docker Desktop</strong></td>
+<td><a href="https://www.docker.com/products/docker-desktop">https://www.docker.com/products/docker-desktop</a></td>
+<td>Container runtime</td>
+</tr>
+<tr>
+<td><strong>Tilt</strong></td>
+<td><code>curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash</code></td>
+<td>Local dev orchestrator</td>
+</tr>
+<tr>
+<td><strong>gh CLI</strong></td>
+<td><a href="https://cli.github.com">https://cli.github.com</a></td>
+<td>GitHub authentication, PR management</td>
+</tr>
+</tbody></table>
+<p>Verify: <code>tilt version</code> and <code>docker info</code> should both succeed before proceeding.</p>
+<hr>
+<h3>18.2 One-Command Start / Stop</h3>
+<pre><code class="language-bash"># Start everything (Postgres + backend + frontend + migrations + seed)
+tilt up
+
+# Stop and tear down
+tilt down
+</code></pre>
+<p>Tilt UI is available at <strong><a href="http://localhost:10350">http://localhost:10350</a></strong> — shows live logs for all services, build status, and resource health.</p>
+<hr>
+<h3>18.3 Tiltfile (repo root: <code>Tiltfile</code>)</h3>
+<pre><code class="language-python"># Tiltfile — local development orchestration for bookapp
+
+# ── PostgreSQL via Docker Compose ────────────────────────────────────
+docker_compose(&#39;./docker-compose.yml&#39;)
+dc_resource(&#39;db&#39;, labels=[&#39;infrastructure&#39;])
+
+# ── Backend ───────────────────────────────────────────────────────────
+docker_build(
+  &#39;jarvis-jupiter/bookapp-backend&#39;,
+  &#39;./backend&#39;,
+  dockerfile=&#39;./backend/Dockerfile&#39;,
+  target=&#39;builder&#39;,           # Use builder stage for dev (includes devDeps + ts)
+  live_update=[
+    sync(&#39;./backend/src&#39;, &#39;/app/src&#39;),          # Hot reload: src changes sync live
+    run(&#39;npm run build&#39;, trigger=[&#39;./backend/src&#39;]),
+  ],
+)
+
+k8s_resource = None  # Not using Kubernetes locally
+
+local_resource(
+  &#39;backend&#39;,
+  serve_cmd=&#39;cd backend &amp;&amp; npm run dev&#39;,        # nodemon / tsx watch
+  deps=[&#39;./backend/src&#39;],
+  labels=[&#39;backend&#39;],
+)
+
+# Port forward backend
+local_resource(
+  &#39;backend-port&#39;,
+  serve_cmd=&#39;echo &quot;Backend on :3001&quot;&#39;,
+  labels=[&#39;backend&#39;],
+)
+
+# ── Frontend ──────────────────────────────────────────────────────────
+docker_build(
+  &#39;jarvis-jupiter/bookapp-frontend&#39;,
+  &#39;./frontend&#39;,
+  dockerfile=&#39;./frontend/Dockerfile&#39;,
+  target=&#39;builder&#39;,
+  live_update=[
+    sync(&#39;./frontend/app&#39;, &#39;/app/app&#39;),         # Hot reload: Remix app dir
+  ],
+)
+
+local_resource(
+  &#39;frontend&#39;,
+  serve_cmd=&#39;cd frontend &amp;&amp; npm run dev&#39;,       # Remix dev server with HMR
+  deps=[&#39;./frontend/app&#39;],
+  labels=[&#39;frontend&#39;],
+)
+
+# ── Prisma Migrations (runs on backend start) ─────────────────────────
+local_resource(
+  &#39;db-migrate&#39;,
+  cmd=&#39;cd backend &amp;&amp; npx prisma migrate dev --name auto --skip-seed&#39;,
+  deps=[&#39;./backend/prisma/schema.prisma&#39;],
+  resource_deps=[&#39;db&#39;],
+  labels=[&#39;database&#39;],
+)
+
+# ── Database Seed (runs once) ─────────────────────────────────────────
+local_resource(
+  &#39;db-seed&#39;,
+  cmd=&#39;cd backend &amp;&amp; npx prisma db seed&#39;,
+  resource_deps=[&#39;db-migrate&#39;],
+  labels=[&#39;database&#39;],
+  trigger_mode=TRIGGER_MODE_MANUAL,             # Run manually: tilt trigger db-seed
+)
+</code></pre>
+<p><strong>Port mapping:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Host Port</th>
+<th>Container Port</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Backend (Express)</td>
+<td>3001</td>
+<td>3001</td>
+</tr>
+<tr>
+<td>Frontend (Remix)</td>
+<td>3000</td>
+<td>3000</td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>5432</td>
+<td>5432</td>
+</tr>
+<tr>
+<td>Tilt UI</td>
+<td>10350</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p><strong>Live sync behaviour:</strong></p>
+<ul>
+<li><code>./backend/src</code> → <code>/app/src</code>: TypeScript changes are picked up by <code>tsx watch</code> / <code>nodemon</code>, recompiling the backend without a full Docker rebuild.</li>
+<li><code>./frontend/app</code>: Remix dev server&#39;s HMR watches this directory and pushes changes to the browser instantly.</li>
+</ul>
+<p><strong>docker-compose.yml</strong> (used by Tilt for PostgreSQL only):</p>
+<pre><code class="language-yaml">version: &quot;3.8&quot;
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bookmarks_db
+    ports:
+      - &quot;5432:5432&quot;
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+</code></pre>
+<hr>
+<h2>19. CI/CD Pipeline (GitHub Actions)</h2>
+<h3>19.1 Overview</h3>
+<p><strong>Tool:</strong> GitHub Actions<br><strong>Trigger:</strong> Push to <code>main</code> branch (i.e., after a PR is merged)<br><strong>Registry:</strong> GitHub Container Registry (<code>ghcr.io</code>)<br><strong>Production target:</strong> VPS (DigitalOcean / Hetzner) running Docker</p>
+<p><strong>Pipeline stages:</strong></p>
+<pre><code>Push to main
+    │
+    ▼
+┌─────────┐     ┌─────────┐     ┌──────────┐     ┌─────────┐
+│  Test   │ ──▶ │  Build  │ ──▶ │   Push   │ ──▶ │ Deploy  │
+│ (unit + │     │ (Docker │     │ (ghcr.io │     │ (SSH to │
+│ integr. │     │  multi- │     │  + sha + │     │  VPS)   │
+│ + E2E)  │     │  stage) │     │  latest) │     │         │
+└─────────┘     └─────────┘     └──────────┘     └─────────┘
+</code></pre>
+<p><strong>Stages are sequential.</strong> Build only runs if all tests pass. Push only runs if build succeeds. Deploy only runs if push succeeds.</p>
+<hr>
+<h3>19.2 Stage Details</h3>
+<h4>Stage 1 — Test</h4>
+<p>Runs the full test suite against a test database (ephemeral Postgres service container):</p>
+<ul>
+<li><strong>Unit tests</strong> (Vitest): domain functions, use cases with stub port implementations</li>
+<li><strong>Integration tests</strong> (Vitest + Supertest): Express route handlers against a test DB</li>
+<li><strong>E2E tests</strong> (Playwright): full user journey (Chromium) against a test instance of the running app</li>
+</ul>
+<p>The test stage spins up a Postgres service container in the GitHub Actions runner. Prisma migrations are applied before tests run.</p>
+<h4>Stage 2 — Build</h4>
+<p>Builds both Docker images using the <code>runner</code> (production) stage of each multi-stage Dockerfile:</p>
+<pre><code>docker build --target runner -t ghcr.io/jarvis-jupiter/bookapp-backend:&lt;sha&gt; ./backend
+docker build --target runner -t ghcr.io/jarvis-jupiter/bookapp-frontend:&lt;sha&gt; ./frontend
+</code></pre>
+<h4>Stage 3 — Push</h4>
+<p>Pushes both images to ghcr.io with two tags:</p>
+<ul>
+<li><code>ghcr.io/jarvis-jupiter/bookapp-backend:&lt;git-sha&gt;</code></li>
+<li><code>ghcr.io/jarvis-jupiter/bookapp-backend:latest</code></li>
+</ul>
+<p>(Same for frontend.)</p>
+<h4>Stage 4 — Deploy</h4>
+<p>Connects to the production VPS via SSH and performs a zero-downtime-ish rolling restart:</p>
+<pre><code class="language-bash"># On VPS (executed via SSH from GitHub Actions):
+docker pull ghcr.io/jarvis-jupiter/bookapp-backend:latest
+docker stop bookapp-backend &amp;&amp; docker rm bookapp-backend
+docker run -d --name bookapp-backend \
+  --env-file /srv/bookapp/.env \
+  -p 3001:3001 \
+  --network bookapp-net \
+  ghcr.io/jarvis-jupiter/bookapp-backend:latest
+
+docker pull ghcr.io/jarvis-jupiter/bookapp-frontend:latest
+docker stop bookapp-frontend &amp;&amp; docker rm bookapp-frontend
+docker run -d --name bookapp-frontend \
+  --env-file /srv/bookapp/.env \
+  -p 3000:3000 \
+  --network bookapp-net \
+  ghcr.io/jarvis-jupiter/bookapp-frontend:latest
+</code></pre>
+<hr>
+<h3>19.3 Production VPS Setup</h3>
+<p><strong>Infrastructure:</strong> Single VPS (DigitalOcean Droplet or Hetzner Cloud) running Docker.</p>
+<pre><code>┌────────────────────────────────────────────────────────────────────┐
+│  VPS (Ubuntu 22.04 + Docker)                                       │
+│                                                                    │
+│  ┌─────────────────┐  ┌──────────────────┐  ┌──────────────────┐  │
+│  │ bookapp-frontend │  │ bookapp-backend   │  │ bookapp-postgres │  │
+│  │ :3000            │  │ :3001             │  │ :5432            │  │
+│  │ (Remix)          │  │ (Express)         │  │ (named volume)   │  │
+│  └─────────────────┘  └──────────────────┘  └──────────────────┘  │
+│                                                                    │
+│  Docker network: bookapp-net (bridge)                              │
+│  Env file: /srv/bookapp/.env  (NOT in repo, NOT in image)         │
+└────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>PostgreSQL</strong> runs as a persistent Docker container with a <strong>named volume</strong> (<code>pgdata</code>) — data survives container restarts and deploys.</p>
+<p><strong>Environment variables</strong> on the VPS are stored in <code>/srv/bookapp/.env</code> (not committed, not in the image):</p>
+<pre><code class="language-env">DATABASE_URL=postgresql://postgres:&lt;password&gt;@bookapp-postgres:5432/bookmarks_db
+JWT_SECRET=&lt;random-256-bit-hex&gt;
+GOOGLE_BOOKS_API_KEY=&lt;api-key&gt;
+SESSION_SECRET=&lt;random-256-bit-hex&gt;
+PORT=3001
+NODE_ENV=production
+API_BASE_URL=http://bookapp-backend:3001
+</code></pre>
+<p><strong>Prisma migrations</strong> on deploy: add a <code>docker exec bookapp-backend npx prisma migrate deploy</code> step in the deploy stage before starting the new container.</p>
+<hr>
+<h3>19.4 Required GitHub Actions Secrets</h3>
+<p>Configure these in the repository <strong>Settings → Secrets and variables → Actions</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Secret</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DEPLOY_HOST</code></td>
+<td>VPS IP address or hostname</td>
+</tr>
+<tr>
+<td><code>DEPLOY_USER</code></td>
+<td>SSH user (e.g. <code>deploy</code>)</td>
+</tr>
+<tr>
+<td><code>DEPLOY_SSH_KEY</code></td>
+<td>Private SSH key (Ed25519 recommended)</td>
+</tr>
+<tr>
+<td><code>GHCR_TOKEN</code></td>
+<td>GitHub Personal Access Token with <code>write:packages</code> scope (for ghcr.io push)</td>
+</tr>
+<tr>
+<td><code>DATABASE_URL</code></td>
+<td>Production DB connection string (for migration step)</td>
+</tr>
+<tr>
+<td><code>SESSION_SECRET</code></td>
+<td>Remix session signing secret</td>
+</tr>
+<tr>
+<td><code>GOOGLE_BOOKS_API_KEY</code></td>
+<td>Google Books API key</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>19.5 Workflow Skeleton (<code>.github/workflows/cd.yml</code>)</h3>
+<pre><code class="language-yaml">name: CD — Build, Push, Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/jarvis-jupiter/bookapp-backend
+  FRONTEND_IMAGE: ghcr.io/jarvis-jupiter/bookapp-frontend
+
+jobs:
+  # ── Job 1: Test ────────────────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: bookmarks_test
+        ports: [&quot;5432:5432&quot;]
+        options: &gt;-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: &quot;20&quot; }
+      - name: Install backend deps
+        run: cd backend &amp;&amp; npm ci
+      - name: Run Prisma migrations (test DB)
+        run: cd backend &amp;&amp; npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/bookmarks_test
+      - name: Run unit + integration tests
+        run: cd backend &amp;&amp; npm test
+        env:
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/bookmarks_test
+          JWT_SECRET: test-secret
+          GOOGLE_BOOKS_API_KEY: ${{ secrets.GOOGLE_BOOKS_API_KEY }}
+      - name: Install frontend deps
+        run: cd frontend &amp;&amp; npm ci
+      - name: Install Playwright browsers
+        run: cd frontend &amp;&amp; npx playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: cd frontend &amp;&amp; npx playwright test
+        env:
+          BASE_URL: http://localhost:3000
+          # (Requires backend + frontend started in a prior step — omitted for brevity)
+
+  # ── Job 2: Build Docker images ─────────────────────────────────────
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.meta.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+      - name: Set image tag
+        id: meta
+        run: echo &quot;sha=$(git rev-parse --short HEAD)&quot; &gt;&gt; $GITHUB_OUTPUT
+      - name: Build backend image
+        run: |
+          docker build --target runner \
+            -t ${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.sha }} \
+            -t ${{ env.BACKEND_IMAGE }}:latest \
+            ./backend
+      - name: Build frontend image
+        run: |
+          docker build --target runner \
+            -t ${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.sha }} \
+            -t ${{ env.FRONTEND_IMAGE }}:latest \
+            ./frontend
+
+  # ── Job 3: Push to ghcr.io ─────────────────────────────────────────
+  push:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+      - name: Push backend image
+        run: |
+          docker push ${{ env.BACKEND_IMAGE }}:${{ needs.build.outputs.sha }}
+          docker push ${{ env.BACKEND_IMAGE }}:latest
+      - name: Push frontend image
+        run: |
+          docker push ${{ env.FRONTEND_IMAGE }}:${{ needs.build.outputs.sha }}
+          docker push ${{ env.FRONTEND_IMAGE }}:latest
+
+  # ── Job 4: Deploy to VPS ───────────────────────────────────────────
+  deploy:
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            # Pull latest images
+            docker pull ${{ env.BACKEND_IMAGE }}:latest
+            docker pull ${{ env.FRONTEND_IMAGE }}:latest
+
+            # Restart backend
+            docker stop bookapp-backend || true
+            docker rm bookapp-backend || true
+            docker run -d --name bookapp-backend \
+              --env-file /srv/bookapp/.env \
+              -p 3001:3001 \
+              --network bookapp-net \
+              ${{ env.BACKEND_IMAGE }}:latest
+
+            # Run migrations against production DB
+            docker exec bookapp-backend npx prisma migrate deploy
+
+            # Restart frontend
+            docker stop bookapp-frontend || true
+            docker rm bookapp-frontend || true
+            docker run -d --name bookapp-frontend \
+              --env-file /srv/bookapp/.env \
+              -p 3000:3000 \
+              --network bookapp-net \
+              ${{ env.FRONTEND_IMAGE }}:latest
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> This is a skeleton — it conveys the structure and intent. Dev must fill in the E2E startup steps (starting backend/frontend processes in CI before Playwright runs) and ensure the <code>bookapp-net</code> Docker network and PostgreSQL container exist on the VPS before first deploy.</p>
+</blockquote>
 
 </div>
 
